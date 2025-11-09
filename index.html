@@ -115,7 +115,7 @@
           <span id="user-name">Loading...</span>
           <span class="premium-icon">⭐</span>
         </div>
-        <div class="info"><b>Balance:</b> <span id="balance">0</span> coins</div>
+        <div class="info"><b>Balance:</b> <span id="balance">0</span> BDT</div>
         <div class="info"><b>Ads Watched:</b> <span id="views">0</span></div>
       </div>
     </div>
@@ -123,7 +123,6 @@
     <!-- Ad Section -->
     <div class="card" id="ad-section">
       <button class="btn" id="watchBtn" onclick="watchAd()">🎬 Watch Ad</button>
-      <button class="btn hidden" id="claimBtn" onclick="claimCoins()">🎁 Claim Coin</button>
       <p id="countdown"></p>
     </div>
 
@@ -135,14 +134,14 @@
 
     <!-- Withdraw Section -->
     <div class="card hidden" id="withdraw-section">
-      <h3>Withdraw Coins</h3>
+      <h3>Withdraw Balance</h3>
       <select id="method">
         <option value="bkash">Bkash</option>
         <option value="nagad">Nagad</option>
       </select>
-      <input type="number" id="coinAmount" placeholder="Enter Coin Amount" oninput="calculateBDT()">
+      <input type="number" id="balanceAmount" placeholder="Enter Amount" oninput="calculateBDT()">
       <p id="bdtValue">You will get: 0 BDT</p>
-      <p style="color:#ffeb3b; font-size:13px;">⚠️ Minimum Withdraw: 100000 coins</p>
+      <p style="color:#ffeb3b; font-size:13px;">⚠️ Minimum Withdraw: 100 BDT</p>
       <input type="text" id="accountNumber" placeholder="Enter your account number">
       <button class="btn" onclick="submitWithdraw()">Submit</button>
       <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
@@ -183,22 +182,20 @@
     document.getElementById("user-photo").src = photoUrl;
 
     // === Conversion System ===
-    const COIN_TO_BDT = 0.001; // 1 coin = 0.001 BDT
-    const REWARD = 50; // প্রতি অ্যাডে কয়েন
-    const MIN_WITHDRAW = 100000;
+    const REWARD = 0.05; // প্রতি অ্যাডে BDT
+    const MIN_WITHDRAW = 100; // BDT
 
     // State
-    let coins = parseInt(localStorage.getItem("coins")) || 0;
+    let balance = parseFloat(localStorage.getItem("balance")) || 0;
     let views = parseInt(localStorage.getItem("views")) || 0;
     let adTimer = null;
-    let claimTimer = null;
 
     function updateUI(){
-      document.getElementById("balance").innerText = coins;
+      document.getElementById("balance").innerText = balance.toFixed(2);
       document.getElementById("views").innerText = views;
     }
     function saveData(){
-      localStorage.setItem("coins", coins);
+      localStorage.setItem("balance", balance.toFixed(2));
       localStorage.setItem("views", views);
     }
 
@@ -226,12 +223,10 @@
 
     function watchAd(){
       const watchBtn=document.getElementById('watchBtn');
-      const claimBtn=document.getElementById('claimBtn');
       const countdownEl=document.getElementById('countdown');
 
       watchBtn.disabled=true;
       watchBtn.classList.add('muted');
-      claimBtn.classList.add('hidden');
       countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
 
       tryShowAd();
@@ -241,40 +236,13 @@
         countdownEl.innerText=`⏳ Please wait ${remaining} seconds...`;
         if(remaining<=0){
           clearInterval(adTimer);
-          countdownEl.innerText="✅ Ad watched. Now claim your coin!";
-          claimBtn.classList.remove('hidden');
-          watchBtn.disabled=false;
-          watchBtn.classList.remove('muted');
-        }
-      },1000);
-    }
-
-    function claimCoins(){
-      const claimBtn=document.getElementById('claimBtn');
-      const watchBtn=document.getElementById('watchBtn');
-      const countdownEl=document.getElementById('countdown');
-
-      claimBtn.disabled=true;
-      claimBtn.classList.add('muted');
-      countdownEl.innerText=`⏳ Claiming in ${AD_DURATION} seconds...`;
-
-      tryShowAd();
-      let remaining=AD_DURATION;
-      claimTimer=setInterval(()=>{
-        remaining--;
-        countdownEl.innerText=`⏳ Claiming in ${remaining} seconds...`;
-        if(remaining<=0){
-          clearInterval(claimTimer);
-          coins+=REWARD;
+          balance += REWARD;
           views++;
           saveData();
           updateUI();
-          countdownEl.innerText=`🎉 You earned ${REWARD} coins!`;
+          countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
           const coin=document.getElementById('coinSound');
           if(coin){ coin.play().catch(()=>{}); }
-          claimBtn.disabled=false;
-          claimBtn.classList.add('hidden');
-          claimBtn.classList.remove('muted');
           watchBtn.disabled=false;
           watchBtn.classList.remove('muted');
         }
@@ -287,28 +255,26 @@
       document.getElementById("referral-section").classList.add("hidden");
     }
     function calculateBDT(){
-      const amount=parseInt(document.getElementById("coinAmount").value)||0;
-      const bdt=(amount*COIN_TO_BDT).toFixed(2);
-      document.getElementById("bdtValue").innerText=`You will get: ${bdt} BDT`;
+      const amount=parseFloat(document.getElementById("balanceAmount").value)||0;
+      document.getElementById("bdtValue").innerText=`You will get: ${amount.toFixed(2)} BDT`;
     }
     function submitWithdraw(){
       const method=document.getElementById("method").value;
-      const amount=parseInt(document.getElementById("coinAmount").value);
+      const amount=parseFloat(document.getElementById("balanceAmount").value);
       const account=document.getElementById("accountNumber").value.trim();
-      if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} coins.`); return;}
+      if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
       if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
-      if(amount>coins){ alert("You don't have enough coins."); return;}
-      coins-=amount; saveData(); updateUI();
-      const bdtValue = (amount*COIN_TO_BDT).toFixed(2);
+      if(amount>balance){ alert("You don't have enough balance."); return;}
+      balance -= amount; saveData(); updateUI();
       document.getElementById("withdraw-section").innerHTML=`
         <h3>✅ Withdraw request submitted!</h3>
         <p>Method: ${method.toUpperCase()}</p>
-        <p>Amount: ${amount} coins (~ ${bdtValue} BDT)</p>
+        <p>Amount: ${amount.toFixed(2)} BDT</p>
         <p>Account Number: ${account}</p>
         <p>We will process your request soon.</p>
         <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
       `;
-      sendTelegramMessage(`💰 Withdraw Request:\nUser: ${userName} (ID: ${userId})\nMethod: ${method.toUpperCase()}\nAmount: ${amount} coins (~ ${bdtValue} BDT)\nAccount: ${account}`);
+      sendTelegramMessage(`💰 Withdraw Request:\nUser: ${userName} (ID: ${userId})\nMethod: ${method.toUpperCase()}\nAmount: ${amount.toFixed(2)} BDT\nAccount: ${account}`);
     }
 
     function showReferral(){
