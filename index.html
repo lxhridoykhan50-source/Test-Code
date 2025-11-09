@@ -102,13 +102,7 @@
     <!-- Ad Box -->
     <div id="adBox">
       <p>🎬 Ad running... Please wait <span id="timer">10</span> seconds</p>
-
-      <!-- 🔹 এখানে আপনার ad script যোগ করা হয়েছে -->
-      <div id="adContainer">
-        <script src='//libtl.com/sdk.js' data-zone='9777736' data-sdk='show_9777736'></script>
-      </div>
-      <!-- 🔹 উপরের স্ক্রিপ্টটাই একমাত্র পরিবর্তন -->
-
+      <div id="adContainer"></div>
       <button class="btn" id="backFromAd">🔙 Back</button>
     </div>
 
@@ -201,6 +195,9 @@
     function showMain() {
       ["adBox","referBox","withdrawBox"].forEach(id => document.getElementById(id).style.display = "none");
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "block");
+      // Remove ad script after finished
+      const adContainer = document.getElementById("adContainer");
+      adContainer.innerHTML = "";
     }
 
     // 🎯 Start Earn
@@ -208,6 +205,15 @@
       const adBox = document.getElementById("adBox");
       adBox.style.display = "block";
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
+
+      // Inject ad script dynamically
+      const adContainer = document.getElementById("adContainer");
+      adContainer.innerHTML = "";
+      const adScript = document.createElement("script");
+      adScript.src = "//libtl.com/sdk.js";
+      adScript.setAttribute("data-zone", "9777736");
+      adScript.setAttribute("data-sdk", "show_9777736");
+      adContainer.appendChild(adScript);
 
       let time = 10;
       const timerEl = document.getElementById("timer");
