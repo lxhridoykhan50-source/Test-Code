@@ -26,7 +26,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const tg = (window.Telegram && window.Telegram.WebApp)?window.Telegram.WebApp:null;
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
 const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
 const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
@@ -44,30 +44,29 @@ const MIN_REF_FOR_WITHDRAW = 10;
 let adTimer = null;
 const AD_DURATION = 15;
 
-// Firebase functions
 async function getUserData() {
   const dbRef = ref(db);
   const snapshot = await get(child(dbRef, `users/${userId}`));
-  if(snapshot.exists()){
+  if (snapshot.exists()) {
     const data = snapshot.val();
-    if(!data.claimedReferrals) data.claimedReferrals = [];
-    if(!data.balance) data.balance = 0;
-    if(!data.views) data.views = 0;
-    if(!data.refCount) data.refCount = 0;
-    if(!data.totalWithdrawn) data.totalWithdrawn = 0;
+    if (!data.claimedReferrals) data.claimedReferrals = [];
+    if (!data.balance) data.balance = 0;
+    if (!data.views) data.views = 0;
+    if (!data.refCount) data.refCount = 0;
+    if (!data.totalWithdrawn) data.totalWithdrawn = 0;
     return data;
   } else {
-    const defaultData = { balance: 0, views:0, refCount:0, totalWithdrawn:0, claimedReferrals:[] };
+    const defaultData = { balance: 0, views: 0, refCount: 0, totalWithdrawn: 0, claimedReferrals: [] };
     await set(ref(db, `users/${userId}`), defaultData);
     return defaultData;
   }
 }
 
-async function saveUserData(data){
+async function saveUserData(data) {
   await update(ref(db, `users/${userId}`), data);
 }
 
-async function updateUI(){
+async function updateUI() {
   const data = await getUserData();
   document.getElementById("balanceVal").innerText = data.balance.toFixed(2);
   document.getElementById("viewsVal").innerText = data.views;
@@ -75,179 +74,149 @@ async function updateUI(){
   document.getElementById("withdrawnVal").innerText = data.totalWithdrawn.toFixed(2);
 }
 
-// Watch Ad
-window.watchAd = async function(){
-    const watchBtn=document.getElementById('watchBtn');
-    const countdownEl=document.getElementById('countdown');
-    watchBtn.disabled=true;
-    watchBtn.classList.add('muted');
-    countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
+window.watchAd = async function() {
+  const watchBtn = document.getElementById('watchBtn');
+  const countdownEl = document.getElementById('countdown');
+  watchBtn.disabled = true;
+  watchBtn.classList.add('muted');
+  countdownEl.innerText = `⏳ Please wait ${AD_DURATION} seconds...`;
 
-    try{ if(typeof window.show_9777736==="function"){ window.show_9777736(); } }catch(e){}
+  try { if (typeof window.show_9777736 === "function") { window.show_9777736(); } } catch (e) {}
 
-    let remaining=AD_DURATION;
-    adTimer=setInterval(async ()=>{
-      remaining--;
-      countdownEl.innerText=`⏳ Please wait ${remaining} seconds...`;
-      if(remaining<=0){
-        clearInterval(adTimer);
-        const data = await getUserData();
-        data.balance = (data.balance || 0) + REWARD;
-        data.views = (data.views || 0) + 1;
-        await saveUserData(data);
-        countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
-        document.getElementById('coinSound').play().catch(()=>{});
-        watchBtn.disabled=false;
-        watchBtn.classList.remove('muted');
-        updateUI();
-      }
-    },1000);
-}
-
-// Withdraw
-window.showWithdraw = function(){
-    document.getElementById("withdraw-section").classList.remove("hidden");
-    document.getElementById("ad-section").classList.add("hidden");
-    document.getElementById("referral-section").classList.add("hidden");
-}
-
-window.calculateBDT = function(){
-    const amount=parseFloat(document.getElementById("balanceAmount").value)||0;
-    document.getElementById("bdtValue").innerText=`You will get: ${amount.toFixed(2)} BDT`;
-}
-
-window.submitWithdraw = async function(){
-    const method=document.getElementById("method").value;
-    const amount=parseFloat(document.getElementById("balanceAmount").value);
-    const account=document.getElementById("accountNumber").value.trim();
-    const data = await getUserData();
-    if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
-    if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
-    if(amount>data.balance){ alert("You don't have enough balance."); return;}
-    if(data.refCount < MIN_REF_FOR_WITHDRAW){ alert(`You need at least ${MIN_REF_FOR_WITHDRAW} referrals to withdraw.`); return; }
-
-    data.balance -= amount;
-    data.totalWithdrawn = (data.totalWithdrawn || 0) + amount;
-    await saveUserData(data);
-    document.getElementById("withdraw-section").innerHTML=`
-      <h3>✅ Withdraw request submitted!</h3>
-      <p>Method: ${method.toUpperCase()}</p>
-      <p>Amount: ${amount.toFixed(2)} BDT</p>
-      <p>Account Number: ${account}</p>
-      <p>We will process your request soon.</p>
-      <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
-    `;
-    updateUI();
-}
-
-// Referral
-window.showReferral = async function(){
-    document.getElementById("referral-section").classList.remove("hidden");
-    document.getElementById("withdraw-section").classList.add("hidden");
-    document.getElementById("ad-section").classList.add("hidden");
-    document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
-}
-
-window.copyReferral = function(){
-    const ref=document.getElementById("refLink").innerText;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(ref).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(ref));
-    } else fallbackCopy(ref);
-    function fallbackCopy(text){
-      const ta=document.createElement('textarea');
-      ta.value=text;
-      document.body.appendChild(ta);
-      ta.select();
-      try{document.execCommand('copy'); alert('Referral link copied!');}catch(e){alert('Copy failed.');}
-      ta.remove();
+  let remaining = AD_DURATION;
+  adTimer = setInterval(async () => {
+    remaining--;
+    countdownEl.innerText = `⏳ Please wait ${remaining} seconds...`;
+    if (remaining <= 0) {
+      clearInterval(adTimer);
+      const data = await getUserData();
+      data.balance += REWARD;
+      data.views += 1;
+      await saveUserData(data);
+      countdownEl.innerText = `🎉 You earned ${REWARD.toFixed(2)} BDT!`;
+      document.getElementById('coinSound').play().catch(() => {});
+      watchBtn.disabled = false;
+      watchBtn.classList.remove('muted');
+      updateUI();
     }
-}
+  }, 1000);
+};
 
-window.claimReferralBonus = async function(){
-    const code=document.getElementById("claimCode").value.trim();
-    const data = await getUserData();
-    if(!code){alert("Please enter referral code."); return;}
-    if(code==userId){alert("You cannot use your own referral code."); return;}
-    if(data.claimedReferrals.includes(code)){alert("You already claimed bonus from this code."); return;}
-    data.balance = (data.balance || 0) + REF_BONUS;
-    data.refCount = (data.refCount || 0) + 1;
-    data.claimedReferrals.push(code);
-    await saveUserData(data);
-    alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
-    updateUI();
-}
+window.showWithdraw = function() {
+  document.getElementById("withdraw-section").classList.remove("hidden");
+  document.getElementById("ad-section").classList.add("hidden");
+  document.getElementById("referral-section").classList.add("hidden");
+};
 
-window.goBack = function(){
-    document.getElementById("withdraw-section").classList.add("hidden");
-    document.getElementById("referral-section").classList.add("hidden");
-    document.getElementById("ad-section").classList.remove("hidden");
-    updateUI();
-}
+window.calculateBDT = function() {
+  const amount = parseFloat(document.getElementById("balanceAmount").value) || 0;
+  document.getElementById("bdtValue").innerText = `You will get: ${amount.toFixed(2)} BDT`;
+};
 
-window.showNotice = function(){ document.getElementById("noticeOverlay").style.display="flex"; }
-window.closeNotice = function(){ document.getElementById("noticeOverlay").style.display="none"; }
-window.onload=function(){ setTimeout(showNotice,2000); updateUI(); }
+window.submitWithdraw = async function() {
+  const method = document.getElementById("method").value;
+  const amount = parseFloat(document.getElementById("balanceAmount").value);
+  const account = document.getElementById("accountNumber").value.trim();
+  const data = await getUserData();
+  if (isNaN(amount) || amount < MIN_WITHDRAW) return alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`);
+  if (!account || account.length < 6) return alert("Please enter a valid account number.");
+  if (amount > data.balance) return alert("You don't have enough balance.");
+  if (data.refCount < MIN_REF_FOR_WITHDRAW) return alert(`You need at least ${MIN_REF_FOR_WITHDRAW} referrals.`);
 
+  data.balance -= amount;
+  data.totalWithdrawn += amount;
+  await saveUserData(data);
+  document.getElementById("withdraw-section").innerHTML = `
+    <h3>✅ Withdraw request submitted!</h3>
+    <p>Method: ${method.toUpperCase()}</p>
+    <p>Amount: ${amount.toFixed(2)} BDT</p>
+    <p>Account: ${account}</p>
+    <p>We will process your request soon.</p>
+    <button class="btn back-btn" onclick="goBack()">🔙 Back</button>`;
+  updateUI();
+};
+
+window.showReferral = async function() {
+  document.getElementById("referral-section").classList.remove("hidden");
+  document.getElementById("withdraw-section").classList.add("hidden");
+  document.getElementById("ad-section").classList.add("hidden");
+  document.getElementById("refLink").innerText = `https://t.me/ads25_income_bot?start=${userId}`;
+};
+
+window.copyReferral = function() {
+  const ref = document.getElementById("refLink").innerText;
+  navigator.clipboard.writeText(ref).then(() => alert("Referral link copied!"));
+};
+
+window.claimReferralBonus = async function() {
+  const code = document.getElementById("claimCode").value.trim();
+  const data = await getUserData();
+  if (!code) return alert("Please enter referral code.");
+  if (code == userId) return alert("You cannot use your own referral code.");
+  if (data.claimedReferrals.includes(code)) return alert("Already claimed from this code.");
+  data.balance += REF_BONUS;
+  data.refCount += 1;
+  data.claimedReferrals.push(code);
+  await saveUserData(data);
+  alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
+  updateUI();
+};
+
+window.goBack = function() {
+  document.getElementById("withdraw-section").classList.add("hidden");
+  document.getElementById("referral-section").classList.add("hidden");
+  document.getElementById("ad-section").classList.remove("hidden");
+  updateUI();
+};
+
+window.showNotice = function() { document.getElementById("noticeOverlay").style.display = "flex"; };
+window.closeNotice = function() { document.getElementById("noticeOverlay").style.display = "none"; };
+window.onload = function() { setTimeout(showNotice, 2000); updateUI(); };
 </script>
 
+<!-- 🌈 Dark Blue-Purple Theme -->
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Poppins',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;justify-content:center;padding:20px;}
-.container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;}
-h2{text-align:center;color:#3b3b3b;font-weight:700;font-size:28px;}
-.card{background:#fff;border-radius:15px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.1);transition:transform 0.3s;}
-.card:hover{transform:translateY(-3px);}
-.profile{display:flex;align-items:center;gap:15px;margin-bottom:15px;}
-.profile img{width:70px;height:70px;border-radius:50%;border:2px solid #4f46e5;}
-.user-name{font-weight:600;font-size:18px;color:#222;}
-.stats{display:flex;justify-content:space-between;margin-top:15px;}
-.stat-box{flex:1;background:#f5f5f5;padding:15px;margin:0 5px;border-radius:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
-.stat-box h4{margin-bottom:8px;color:#555;}
-.stat-box p{font-weight:600;font-size:16px;color:#111;}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:600;font-size:16px;cursor:pointer;margin-top:10px;color:#fff;background:linear-gradient(90deg,#7c3aed,#4f46e5);transition:all 0.3s;}
-.btn:hover{transform:scale(1.03);}
-.btn:active{transform:scale(0.98);}
-.back-btn{background:#6b7280;}
-#countdown{margin-top:10px;font-size:14px;font-weight:bold;color:#ff9800;}
-input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ccc;outline:none;font-size:15px;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:linear-gradient(135deg,#1e1b4b,#312e81,#3730a3);color:#fff;min-height:100vh;display:flex;justify-content:center;padding:20px;}
+.container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;animation:fadeIn 1s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.card{background:rgba(255,255,255,0.08);border-radius:16px;padding:22px;backdrop-filter:blur(12px);box-shadow:0 0 20px rgba(79,70,229,0.3);}
+.card:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(99,102,241,0.5);}
+.profile{display:flex;align-items:center;gap:15px;}
+.profile img{width:70px;height:70px;border-radius:50%;border:3px solid #818cf8;box-shadow:0 0 15px rgba(99,102,241,0.6);}
+.stats{display:flex;justify-content:space-between;gap:10px;}
+.stat-box{flex:1;background:rgba(255,255,255,0.1);padding:12px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,0.15);}
+.stat-box h4{color:#c7d2fe;}
+.stat-box p{font-weight:bold;}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(90deg,#6366f1,#4f46e5);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;transition:.3s;}
+.btn:hover{transform:scale(1.03);box-shadow:0 0 20px rgba(99,102,241,0.6);}
+.back-btn{background:linear-gradient(90deg,#6b7280,#4b5563);}
+input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;}
 .hidden{display:none;}
-.muted{opacity:0.6;pointer-events:none;}
-#noticeOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:none;justify-content:center;align-items:center;z-index:9999;}
-.notice-card{background:#fff;color:#111;width:90%;max-width:380px;padding:25px 20px 30px;border-radius:16px;text-align:center;position:relative;box-shadow:0 8px 25px rgba(0,0,0,0.25);}
-.notice-card p{font-size:16px;color:#333;margin-bottom:20px;line-height:1.5;}
-.close-btn{position:absolute;top:10px;right:12px;font-size:20px;font-weight:bold;color:#666;cursor:pointer;}
-.close-btn:hover{color:#000;}
+#noticeOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:999;}
+.notice-card{background:rgba(255,255,255,0.1);color:#fff;width:90%;max-width:380px;padding:25px 20px;border-radius:16px;text-align:center;box-shadow:0 0 25px rgba(99,102,241,0.6);position:relative;}
+.close-btn{position:absolute;top:10px;right:15px;font-size:25px;color:#fff;cursor:pointer;transition:0.3s;}
+.close-btn:hover{color:#f87171;transform:scale(1.2);}
 </style>
-
+</head>
 <body>
+
 <div class="container">
-<h2>🎥 Premium Ads Income</h2>
+<h2 style="text-align:center;">SMART EARN</h2>
 
 <div class="card profile">
-<img id="user-photo" src="https://telegram.org/img/t_logo.png" alt="Profile">
-<div class="user-name" id="user-name">Loading...</div>
+<img id="user-photo" src="https://telegram.org/img/t_logo.png">
+<div><div id="user-name">Loading...</div></div>
 </div>
 
 <div class="stats">
-<div class="stat-box">
-<h4>Balance</h4>
-<p id="balanceVal">0</p>
-</div>
-<div class="stat-box">
-<h4>Ads Watched</h4>
-<p id="viewsVal">0</p>
-</div>
+<div class="stat-box"><h4>Balance</h4><p id="balanceVal">0</p></div>
+<div class="stat-box"><h4>Ads Watched</h4><p id="viewsVal">0</p></div>
 </div>
 
 <div class="stats">
-<div class="stat-box">
-<h4>Referrals</h4>
-<p id="refCountVal">0</p>
-</div>
-<div class="stat-box">
-<h4>Total Withdrawn</h4>
-<p id="withdrawnVal">0</p>
-</div>
+<div class="stat-box"><h4>Referrals</h4><p id="refCountVal">0</p></div>
+<div class="stat-box"><h4>Total Withdrawn</h4><p id="withdrawnVal">0</p></div>
 </div>
 
 <div class="card" id="ad-section">
@@ -270,7 +239,7 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 </select>
 <input type="number" id="balanceAmount" placeholder="Enter Amount" oninput="calculateBDT()">
 <p id="bdtValue">You will get: 0 BDT</p>
-<p style="color:#ff5722;font-size:13px;">⚠️ Minimum Withdraw: 2000 BDT & Minimum 10 Referrals Required</p>
+<p style="font-size:13px;color:#f87171;">⚠️ Minimum Withdraw: 2000 BDT & 10 Referrals Required</p>
 <input type="text" id="accountNumber" placeholder="Enter your account number">
 <button class="btn" onclick="submitWithdraw()">Submit</button>
 <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
@@ -292,11 +261,13 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 <audio id="coinSound"><source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg"></audio>
 
 <div id="noticeOverlay">
-<div class="notice-card">
-<span class="close-btn" onclick="closeNotice()">✖</span>
-<p>আসসালামু আলাইকুম প্রিয় গ্রাহক সবাই কেমন আছেন আশা করি সবাই আল্লাহর রহমতে ভালো আছেন।<br>আমাদের সম্পূর্ণ সেবা গ্রহণ করতে আপনাকে অবশ্যই এই টেলিগ্রাম চ্যানেলে জয়েন করতে হবে।</p>
-<a href="https://t.me/+dSMh9u-1PIg0Njk1" class="btn" target="_blank">Join Channel</a>
+  <div class="notice-card">
+    <span class="close-btn" onclick="closeNotice()">✖</span>
+    <p>আসসালামু আলাইকুম প্রিয় গ্রাহক ❤️<br><br>
+    আমাদের অফিসিয়াল Telegram চ্যানেলে অবশ্যই যোগ দিন সর্বশেষ আপডেট পেতে👇</p>
+    <a href="https://t.me/ads25_income_channel" class="btn" target="_blank">Join Channel</a>
+  </div>
 </div>
-</div>
+
 </body>
 </html>
