@@ -78,6 +78,17 @@
       background: #00695c;
     }
   </style>
+  
+  <!-- ✅ Monetag SDK যুক্ত -->
+  <script src="https://cdn.monetag.com/ads.js"></script>
+  <script>
+    // Monetag initialization (নিজের zone ID বসান)
+    window.monetag = window.monetag || { cmd: [] };
+    monetag.cmd.push(function() {
+      monetag.init("YOUR_MONETAG_ZONE_ID"); 
+    });
+  </script>
+
 </head>
 <body>
 
@@ -99,10 +110,12 @@
     <button class="btn" id="referEarn">👥 Refer Earn</button>
     <button class="btn" id="withdraw">💰 Withdraw</button>
 
-    <!-- Ad Box -->
+    <!-- ✅ Ad Box (এখানে Monetag বিজ্ঞাপন দেখাবে) -->
     <div id="adBox">
-      <p>🎬 Ad running... Please wait <span id="timer">10</span> seconds</p>
-      <div id="adContainer"></div>
+      <p>🎬 বিজ্ঞাপন লোড হচ্ছে...</p>
+      <div id="monetagAdContainer" style="width:100%;height:250px;margin-top:10px;border-radius:10px;overflow:hidden;">
+        <!-- Monetag Ad Container -->
+      </div>
       <button class="btn" id="backFromAd">🔙 Back</button>
     </div>
 
@@ -195,41 +208,26 @@
     function showMain() {
       ["adBox","referBox","withdrawBox"].forEach(id => document.getElementById(id).style.display = "none");
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "block");
-      // Remove ad script after finished
-      const adContainer = document.getElementById("adContainer");
-      adContainer.innerHTML = "";
     }
 
-    // 🎯 Start Earn
+    // 🎯 Start Earn (Monetag বিজ্ঞাপন)
     document.getElementById("startEarn").addEventListener("click", () => {
-      const adBox = document.getElementById("adBox");
-      adBox.style.display = "block";
+      document.getElementById("adBox").style.display = "block";
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
 
-      // Inject ad script dynamically
-      const adContainer = document.getElementById("adContainer");
-      adContainer.innerHTML = "";
-      const adScript = document.createElement("script");
-      adScript.src = "//libtl.com/sdk.js";
-      adScript.setAttribute("data-zone", "9777736");
-      adScript.setAttribute("data-sdk", "show_9777736");
-      adContainer.appendChild(adScript);
+      // ✅ Monetag বিজ্ঞাপন লোড হবে
+      monetag.cmd.push(function() {
+        monetag.display("monetagAdContainer");
+      });
 
-      let time = 10;
-      const timerEl = document.getElementById("timer");
-      timerEl.innerText = time;
-      const countdown = setInterval(() => {
-        time--;
-        timerEl.innerText = time;
-        if (time <= 0) {
-          clearInterval(countdown);
-          tg.showAlert(`🎉 আপনি ৳${adPayout.toFixed(2)} আয় করেছেন!`);
-          balance += adPayout;
-          update(userRef, { balance });
-          document.getElementById("balance").innerText = balance.toFixed(2);
-          showMain();
-        }
-      }, 1000);
+      // 🎯 বিজ্ঞাপন দেখার পর রিওয়ার্ড (১০ সেকেন্ড পর)
+      setTimeout(() => {
+        tg.showAlert(`🎉 আপনি ৳${adPayout.toFixed(2)} আয় করেছেন!`);
+        balance += adPayout;
+        update(userRef, { balance });
+        document.getElementById("balance").innerText = balance.toFixed(2);
+        showMain();
+      }, 10000);
     });
 
     // 👥 Refer
@@ -284,7 +282,7 @@
       showMain();
     });
 
-    ["backFromAd","backFromRefer","backFromWithdraw"].forEach(id => 
+    ["backFromAd","backFromRefer","backFromWithdraw"].forEach(id =>
       document.getElementById(id).addEventListener("click", showMain)
     );
   </script>
