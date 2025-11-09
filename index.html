@@ -9,7 +9,6 @@
 
 <!-- Firebase SDK -->
 <script type="module">
-  // Import Firebase modules
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
   import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
@@ -27,7 +26,6 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // Telegram info
   const tg = (window.Telegram && window.Telegram.WebApp)?window.Telegram.WebApp:null;
   const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
   const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
@@ -42,14 +40,22 @@
   let adTimer = null;
   const AD_DURATION = 15;
 
-  // --- Firebase helper functions ---
+  // Firebase helper functions
   async function getUserData() {
     const dbRef = ref(db);
     const snapshot = await get(child(dbRef, `users/${userId}`));
     if(snapshot.exists()){
-      return snapshot.val();
+      const data = snapshot.val();
+      if(!data.claimedReferrals) data.claimedReferrals = [];
+      if(!data.balance) data.balance = 0;
+      if(!data.views) data.views = 0;
+      if(!data.refCount) data.refCount = 0;
+      if(!data.totalWithdrawn) data.totalWithdrawn = 0;
+      return data;
     } else {
-      return { balance: 0, views:0, refCount:0, totalWithdrawn:0, claimedReferrals:[] };
+      const defaultData = { balance: 0, views:0, refCount:0, totalWithdrawn:0, claimedReferrals:[] };
+      await set(ref(db, `users/${userId}`), defaultData);
+      return defaultData;
     }
   }
 
@@ -65,12 +71,15 @@
     document.getElementById("totalWithdrawn").innerText = data.totalWithdrawn.toFixed(2);
   }
 
+  // Watch Ad
   async function watchAd(){
     const watchBtn=document.getElementById('watchBtn');
     const countdownEl=document.getElementById('countdown');
     watchBtn.disabled=true; watchBtn.classList.add('muted');
     countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
+    
     try{ if(typeof window.show_9777736==="function"){ window.show_9777736(); } }catch(e){}
+
     let remaining=AD_DURATION;
     adTimer=setInterval(async ()=>{
       remaining--;
@@ -78,8 +87,8 @@
       if(remaining<=0){
         clearInterval(adTimer);
         const data = await getUserData();
-        data.balance += REWARD;
-        data.views += 1;
+        data.balance = (data.balance || 0) + REWARD;
+        data.views = (data.views || 0) + 1;
         await saveUserData(data);
         countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
         document.getElementById('coinSound').play().catch(()=>{});
@@ -89,6 +98,9 @@
     },1000);
   }
 
+  window.watchAd = watchAd;
+
+  // Withdraw
   window.showWithdraw = function(){
     document.getElementById("withdraw-section").classList.remove("hidden");
     document.getElementById("ad-section").classList.add("hidden");
@@ -109,7 +121,7 @@
     if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
     if(amount>data.balance){ alert("You don't have enough balance."); return;}
     data.balance -= amount;
-    data.totalWithdrawn += amount;
+    data.totalWithdrawn = (data.totalWithdrawn || 0) + amount;
     await saveUserData(data);
     document.getElementById("withdraw-section").innerHTML=`
       <h3>✅ Withdraw request submitted!</h3>
@@ -122,6 +134,7 @@
     updateUI();
   }
 
+  // Referral
   window.showReferral = async function(){
     document.getElementById("referral-section").classList.remove("hidden");
     document.getElementById("withdraw-section").classList.add("hidden");
@@ -150,8 +163,8 @@
     if(!code){alert("Please enter referral code."); return;}
     if(code==userId){alert("You cannot use your own referral code."); return;}
     if(data.claimedReferrals.includes(code)){alert("You already claimed bonus from this code."); return;}
-    data.balance += REF_BONUS;
-    data.refCount += 1;
+    data.balance = (data.balance || 0) + REF_BONUS;
+    data.refCount = (data.refCount || 0) + 1;
     data.claimedReferrals.push(code);
     await saveUserData(data);
     alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
@@ -165,16 +178,16 @@
     updateUI();
   }
 
-  // --- Notice functions ---
+  // Notice
   window.showNotice = function(){ document.getElementById("noticeOverlay").style.display="flex"; }
   window.closeNotice = function(){ document.getElementById("noticeOverlay").style.display="none"; }
 
   window.onload=function(){ setTimeout(showNotice,2000); updateUI(); }
 
-  window.watchAd = watchAd; // make global
 </script>
 
 <style>
+/* UI styling same as original */
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#4f46e5,#9333ea);min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px;color:#fff;}
 .container{width:100%;max-width:420px;display:flex;flex-direction:column;gap:20px;}
