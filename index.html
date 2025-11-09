@@ -1,287 +1,353 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Earn</title>
+  <meta charset="UTF-8" />
+  <title>Ads Income Place</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="//libtl.com/sdk.js" data-zone="9777736" data-sdk="show_9777736"></script>
+
   <style>
+    * {margin: 0; padding: 0; box-sizing: border-box;}
     body {
-      font-family: "Poppins", sans-serif;
-      background: linear-gradient(135deg, #e0f7f4, #f6fffc);
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+      align-items: flex-start;
+      padding: 40px 20px;
+      color: #fff;
     }
+    .container {width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px;}
+    h2 {text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 5px;}
     .card {
-      background: #fff;
-      padding: 25px;
-      width: 330px;
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      background: rgba(255, 255, 255, 0.12);
       border-radius: 20px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-      text-align: center;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      transition: transform 0.25s ease;
+    }
+    .card:hover {transform: translateY(-4px);}
+    .profile {display: flex; flex-direction: column; align-items: center; gap: 12px;}
+    .profile img {width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;}
+    .user-name {font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 6px;}
+    .verify-icon {color: #00bfff; font-size: 18px;}
+    .premium-icon {color: gold; font-size: 18px;}
+    .info {font-size: 15px; margin-top: 4px;}
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      color: #fff;
+      background: linear-gradient(90deg, #7c3aed, #4f46e5);
       transition: all 0.3s ease;
     }
-    h2 {
-      color: #00796b;
-      margin-bottom: 15px;
-    }
-    .balance {
-      font-size: 22px;
-      font-weight: 600;
-      color: #007b5e;
-    }
-    .stats {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-    }
-    .stats div {
-      width: 48%;
-      background: #e7fdf8;
-      border-radius: 10px;
-      padding: 10px;
-    }
-    .btn {
-      background: #009688;
-      color: white;
-      border: none;
-      padding: 12px;
-      margin-top: 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-      font-size: 16px;
-    }
-    .btn:hover {
-      background: #00796b;
-    }
-    #adBox, #referBox, #withdrawBox {
-      display: none;
-      margin-top: 15px;
-      background: #f4fffc;
-      padding: 15px;
-      border-radius: 12px;
-    }
+    .btn:hover {transform: scale(1.03);}
+    .btn:active {transform: scale(0.98);}
+    .back-btn {background: linear-gradient(90deg, #374151, #111827);}
+    #countdown {margin-top: 12px; font-size: 14px; font-weight: bold; color: #ffeb3b;}
     input, select {
       width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-top: 8px;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 15px;
     }
-    #copyBtn {
-      margin-top: 10px;
-      background: #00695c;
+    .hidden {display: none;}
+    .muted {opacity: 0.6; pointer-events: none;}
+
+    /* Notice Popup */
+    #noticeOverlay {
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
     }
+    .notice-card {
+      background:#fff;
+      color:#111;
+      width:90%;
+      max-width:380px;
+      padding:25px 20px 30px;
+      border-radius:16px;
+      text-align:center;
+      position:relative;
+      box-shadow:0 8px 25px rgba(0,0,0,0.25);
+    }
+    .notice-card p {
+      font-size:16px; color:#333; margin-bottom:20px; line-height:1.5;
+    }
+    .close-btn {
+      position:absolute;
+      top:10px; right:12px;
+      font-size:20px;
+      font-weight:bold;
+      color:#666;
+      cursor:pointer;
+    }
+    .close-btn:hover { color:#000; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>🎥 ADS INCOME PLACE</h2>
 
-  <div class="card">
-    <h2>Smart Earn</h2>
-    <div class="balance">৳ <span id="balance">0.00</span></div>
-    <div class="stats">
-      <div>
-        <p>Total Refer</p>
-        <strong id="referCount">0</strong>
-      </div>
-      <div>
-        <p>Total Withdraw</p>
-        <strong id="withdrawCount">৳0</strong>
+    <!-- Profile Card -->
+    <div class="card" id="profile">
+      <div class="profile">
+        <img id="user-photo" src="https://telegram.org/img/t_logo.png" alt="Profile">
+        <div class="user-name">
+          <span class="verify-icon">✔️</span>
+          <span id="user-name">Loading...</span>
+          <span class="premium-icon">⭐</span>
+        </div>
+        <div class="info"><b>Balance:</b> <span id="balance">0</span> coins</div>
+        <div class="info"><b>Ads Watched:</b> <span id="views">0</span></div>
       </div>
     </div>
 
-    <button class="btn" id="startEarn">🎯 Start Earn</button>
-    <button class="btn" id="referEarn">👥 Refer Earn</button>
-    <button class="btn" id="withdraw">💰 Withdraw</button>
-
-    <!-- Ad Box -->
-    <div id="adBox"></div>
-
-    <!-- Refer Box -->
-    <div id="referBox">
-      <p>🔗 আপনার রেফার কোড:</p>
-      <input type="text" id="refCode" readonly>
-      <button class="btn" id="copyBtn">📋 Copy</button>
-      <hr>
-      <p>অন্য কারো রেফার কোড দিন:</p>
-      <input type="text" id="applyCode" placeholder="Enter refer code">
-      <button class="btn" id="applyBtn">✅ Apply</button>
-      <button class="btn" id="backFromRefer">🔙 Back</button>
+    <!-- Ad Section -->
+    <div class="card" id="ad-section">
+      <button class="btn" id="watchBtn" onclick="watchAd()">🎬 Watch Ad</button>
+      <button class="btn hidden" id="claimBtn" onclick="claimCoins()">🎁 Claim Coin</button>
+      <p id="countdown"></p>
     </div>
 
-    <!-- Withdraw Box -->
-    <div id="withdrawBox">
-      <label>Withdraw Method:</label>
+    <!-- Withdraw/Referral Main -->
+    <div class="card">
+      <button class="btn" onclick="showWithdraw()">💸 Withdraw</button>
+      <button class="btn" onclick="showReferral()">🤝 Refer</button>
+    </div>
+
+    <!-- Withdraw Section -->
+    <div class="card hidden" id="withdraw-section">
+      <h3>Withdraw Coins</h3>
       <select id="method">
-        <option value="bkash">বিকাশ</option>
-        <option value="nagad">নগদ</option>
+        <option value="bkash">Bkash</option>
+        <option value="nagad">Nagad</option>
       </select>
-      <label>Amount (৳):</label>
-      <input type="number" id="amount" placeholder="Minimum">
-      <label>Account Number:</label>
-      <input type="text" id="account" placeholder="Enter number">
-      <button class="btn" id="confirmWithdraw">✅ Confirm Withdraw</button>
-      <button class="btn" id="backFromWithdraw">🔙 Back</button>
+      <input type="number" id="coinAmount" placeholder="Enter Coin Amount" oninput="calculateBDT()">
+      <p id="bdtValue">You will get: 0 BDT</p>
+      <p style="color:#ffeb3b; font-size:13px;">⚠️ Minimum Withdraw: 100000 coins</p>
+      <input type="text" id="accountNumber" placeholder="Enter your account number">
+      <button class="btn" onclick="submitWithdraw()">Submit</button>
+      <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
+    </div>
+
+    <!-- Referral Section -->
+    <div class="card hidden" id="referral-section">
+      <h3>Your Referral Link</h3>
+      <p id="refLink">https://t.me/ads25_income_bot?start=ref</p>
+      <button class="btn" onclick="copyReferral()">☕ Copy</button>
+      <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+  <!-- Claim Sound -->
+  <audio id="coinSound">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg">
+  </audio>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
-      authDomain: "hridoy-f9c90.firebaseapp.com",
-      projectId: "hridoy-f9c90",
-      storageBucket: "hridoy-f9c90.firebasestorage.app",
-      messagingSenderId: "378490678321",
-      appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
-      measurementId: "G-5X6Z7BWTFY"
-    };
+  <!-- Notice Overlay -->
+  <div id="noticeOverlay">
+    <div class="notice-card">
+      <span class="close-btn" onclick="closeNotice()">✖</span>
+      <p>আসসালামু আলাইকুম প্রিয় গ্রাহক সবাই কেমন আছেন আশা করি সবাই আল্লাহর রহমতে ভালো আছেন।<br>আমাদের সম্পূর্ণ সেবা গ্রহণ করতে আপনাকে অবশ্যই এই টেলিগ্রাম চ্যানেলে জয়েন করতে হবে।</p>
+      <a href="https://t.me/+dSMh9u-1PIg0Njk1" class="btn" target="_blank">Join Channel</a>
+    </div>
+  </div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  <script>
+    // === Telegram Safe Init ===
+    const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+    if(tg && typeof tg.expand === 'function'){ try{ tg.expand(); }catch(e){console.log(e);} }
 
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
+    const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
+    const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
+    document.getElementById("user-name").innerText = userName;
+    document.getElementById("user-photo").src = photoUrl;
 
-    let balance = 0;
-    let referCount = 0;
-    let withdrawTotal = 0;
-    let adPayout = 0.5;
-    let referPayout = 1;
-    let minWithdraw = 10;
+    // === Conversion System ===
+    const COIN_TO_BDT = 0.001; // 1 coin = 0.001 BDT
+    const REWARD = 50; // প্রতি অ্যাডে কয়েন
+    const MIN_WITHDRAW = 100000;
 
-    onValue(ref(db, "settings"), (snap) => {
-      if (snap.exists()) {
-        const s = snap.val();
-        adPayout = s.adPayout || 0.5;
-        referPayout = s.referPayout || 1;
-        minWithdraw = s.minWithdraw || 10;
-      }
-    });
+    // State
+    let coins = parseInt(localStorage.getItem("coins")) || 0;
+    let views = parseInt(localStorage.getItem("views")) || 0;
+    let adTimer = null;
+    let claimTimer = null;
 
-    const userId = tg.initDataUnsafe?.user?.id || Math.floor(Math.random() * 100000);
-    const myRefCode = "REF" + userId;
-    document.getElementById("refCode").value = myRefCode;
-
-    const userRef = ref(db, "users/" + userId);
-    let referred = false;
-
-    onValue(userRef, (snap) => {
-      if (snap.exists()) {
-        const u = snap.val();
-        balance = u.balance || 0;
-        referCount = u.referCount || 0;
-        withdrawTotal = u.withdrawTotal || 0;
-        referred = u.referred || false;
-        document.getElementById("balance").innerText = balance.toFixed(2);
-        document.getElementById("referCount").innerText = referCount;
-        document.getElementById("withdrawCount").innerText = "৳" + withdrawTotal;
-      } else {
-        set(userRef, { balance, referCount, withdrawTotal, referred: false });
-      }
-    });
-
-    function showMain() {
-      ["adBox","referBox","withdrawBox"].forEach(id => document.getElementById(id).style.display = "none");
-      document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "block");
+    function updateUI(){
+      document.getElementById("balance").innerText = coins;
+      document.getElementById("views").innerText = views;
+    }
+    function saveData(){
+      localStorage.setItem("coins", coins);
+      localStorage.setItem("views", views);
     }
 
-    // 🎯 Start Earn (Real Ad Integration)
-    document.getElementById("startEarn").addEventListener("click", () => {
-      const adBox = document.getElementById("adBox");
-      adBox.style.display = "block";
-      document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
+    const chatId = "6593402184";
+    const botToken = "7998804506:AAHHW--PQWrqztwV5YBYiyTUbs7t7J2Md3w";
 
-      adBox.innerHTML = `
-        <p>🎬 নিচের বিজ্ঞাপনটি সম্পূর্ণ লোড হলে আপনি আয় পাবেন...</p>
-        <div id="realAdBox" style="margin:10px 0;"></div>
-        <button class="btn" id="backFromAd">🔙 Back</button>
-      `;
+    function sendTelegramMessage(message){
+      try{
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({chat_id:chatId,text:message})
+        }).then(res=>res.json()).then(data=>console.log("Message sent:",data))
+        .catch(err=>console.error("Telegram error:",err));
+      }catch(e){console.error(e);}
+    }
 
-      // libtl.com বিজ্ঞাপন স্ক্রিপ্ট যোগ
-      const script = document.createElement("script");
-      script.src = "//libtl.com/sdk.js";
-      script.dataset.zone = "9777736";
-      script.dataset.sdk = "show_9777736";
-      document.getElementById("realAdBox").appendChild(script);
+    function tryShowAd(){
+      if(typeof window.show_9777736==="function"){
+        try{ window.show_9777736(); }catch(e){console.log(e);}
+      }
+    }
 
-      // ১০ সেকেন্ড পর আয় যোগ
-      let time = 10;
-      const countdown = setInterval(() => {
-        time--;
-        if (time <= 0) {
-          clearInterval(countdown);
-          tg.showAlert(`🎉 আপনি ৳${adPayout.toFixed(2)} আয় করেছেন!`);
-          balance += adPayout;
-          update(userRef, { balance });
-          document.getElementById("balance").innerText = balance.toFixed(2);
-          showMain();
+    const AD_DURATION=15;
+
+    function watchAd(){
+      const watchBtn=document.getElementById('watchBtn');
+      const claimBtn=document.getElementById('claimBtn');
+      const countdownEl=document.getElementById('countdown');
+
+      watchBtn.disabled=true;
+      watchBtn.classList.add('muted');
+      claimBtn.classList.add('hidden');
+      countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
+
+      tryShowAd();
+      let remaining=AD_DURATION;
+      adTimer=setInterval(()=>{
+        remaining--;
+        countdownEl.innerText=`⏳ Please wait ${remaining} seconds...`;
+        if(remaining<=0){
+          clearInterval(adTimer);
+          countdownEl.innerText="✅ Ad watched. Now claim your coin!";
+          claimBtn.classList.remove('hidden');
+          watchBtn.disabled=false;
+          watchBtn.classList.remove('muted');
         }
-      }, 1000);
-    });
+      },1000);
+    }
 
-    // 👥 Refer
-    document.getElementById("referEarn").addEventListener("click", () => {
-      document.getElementById("referBox").style.display = "block";
-      document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
-    });
+    function claimCoins(){
+      const claimBtn=document.getElementById('claimBtn');
+      const watchBtn=document.getElementById('watchBtn');
+      const countdownEl=document.getElementById('countdown');
 
-    document.getElementById("copyBtn").addEventListener("click", () => {
-      navigator.clipboard.writeText(myRefCode);
-      tg.showAlert("✅ Refer code copied!");
-    });
+      claimBtn.disabled=true;
+      claimBtn.classList.add('muted');
+      countdownEl.innerText=`⏳ Claiming in ${AD_DURATION} seconds...`;
 
-    document.getElementById("applyBtn").addEventListener("click", async () => {
-      const inputCode = document.getElementById("applyCode").value.trim();
-      if (!inputCode) return tg.showAlert("❗ রেফার কোড দিন!");
-      if (inputCode === myRefCode) return tg.showAlert("❗ নিজের কোড ব্যবহার করা যাবে না!");
-      if (referred) return tg.showAlert("❗ আপনি ইতিমধ্যে একটি রেফার কোড ব্যবহার করেছেন!");
+      tryShowAd();
+      let remaining=AD_DURATION;
+      claimTimer=setInterval(()=>{
+        remaining--;
+        countdownEl.innerText=`⏳ Claiming in ${remaining} seconds...`;
+        if(remaining<=0){
+          clearInterval(claimTimer);
+          coins+=REWARD;
+          views++;
+          saveData();
+          updateUI();
+          countdownEl.innerText=`🎉 You earned ${REWARD} coins!`;
+          const coin=document.getElementById('coinSound');
+          if(coin){ coin.play().catch(()=>{}); }
+          claimBtn.disabled=false;
+          claimBtn.classList.add('hidden');
+          claimBtn.classList.remove('muted');
+          watchBtn.disabled=false;
+          watchBtn.classList.remove('muted');
+        }
+      },1000);
+    }
 
-      balance += referPayout;
-      referred = true;
-      referCount++;
-      tg.showAlert(`🎁 আপনি ৳${referPayout.toFixed(2)} রেফার বোনাস পেয়েছেন!`);
-      update(userRef, { balance, referCount, referred: true });
-      document.getElementById("balance").innerText = balance.toFixed(2);
-      document.getElementById("referCount").innerText = referCount;
-    });
+    function showWithdraw(){
+      document.getElementById("withdraw-section").classList.remove("hidden");
+      document.getElementById("ad-section").classList.add("hidden");
+      document.getElementById("referral-section").classList.add("hidden");
+    }
+    function calculateBDT(){
+      const amount=parseInt(document.getElementById("coinAmount").value)||0;
+      const bdt=(amount*COIN_TO_BDT).toFixed(2);
+      document.getElementById("bdtValue").innerText=`You will get: ${bdt} BDT`;
+    }
+    function submitWithdraw(){
+      const method=document.getElementById("method").value;
+      const amount=parseInt(document.getElementById("coinAmount").value);
+      const account=document.getElementById("accountNumber").value.trim();
+      if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} coins.`); return;}
+      if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
+      if(amount>coins){ alert("You don't have enough coins."); return;}
+      coins-=amount; saveData(); updateUI();
+      const bdtValue = (amount*COIN_TO_BDT).toFixed(2);
+      document.getElementById("withdraw-section").innerHTML=`
+        <h3>✅ Withdraw request submitted!</h3>
+        <p>Method: ${method.toUpperCase()}</p>
+        <p>Amount: ${amount} coins (~ ${bdtValue} BDT)</p>
+        <p>Account Number: ${account}</p>
+        <p>We will process your request soon.</p>
+        <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
+      `;
+      sendTelegramMessage(`💰 Withdraw Request:\nUser: ${userName} (ID: ${userId})\nMethod: ${method.toUpperCase()}\nAmount: ${amount} coins (~ ${bdtValue} BDT)\nAccount: ${account}`);
+    }
 
-    // 💰 Withdraw
-    document.getElementById("withdraw").addEventListener("click", () => {
-      document.getElementById("withdrawBox").style.display = "block";
-      document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
-    });
+    function showReferral(){
+      document.getElementById("referral-section").classList.remove("hidden");
+      document.getElementById("withdraw-section").classList.add("hidden");
+      document.getElementById("ad-section").classList.add("hidden");
+      document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
+    }
+    function copyReferral(){
+      const ref=document.getElementById("refLink").innerText;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(ref).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(ref));
+      } else fallbackCopy(ref);
+      function fallbackCopy(text){
+        const ta=document.createElement('textarea');
+        ta.value=text; document.body.appendChild(ta); ta.select();
+        try{document.execCommand('copy'); alert('Referral link copied!');}catch(e){alert('Copy failed.');}
+        ta.remove();
+      }
+    }
+    function goBack(){
+      document.getElementById("withdraw-section").classList.add("hidden");
+      document.getElementById("referral-section").classList.add("hidden");
+      document.getElementById("ad-section").classList.remove("hidden");
+      updateUI();
+    }
 
-    document.getElementById("confirmWithdraw").addEventListener("click", async () => {
-      const amount = parseFloat(document.getElementById("amount").value);
-      const account = document.getElementById("account").value.trim();
-      const method = document.getElementById("method").value;
+    updateUI();
 
-      if (amount < minWithdraw) return tg.showAlert(`❗ Minimum ৳${minWithdraw} প্রয়োজন!`);
-      if (!account) return tg.showAlert("❗ নাম্বার দিন!");
-      if (amount > balance) return tg.showAlert("❗ ব্যালেন্স কম আছে!");
-
-      const wRef = push(ref(db, "withdraws"));
-      await set(wRef, { userId, method, amount, account, status: "pending", time: new Date().toISOString() });
-
-      balance -= amount;
-      withdrawTotal += amount;
-      update(userRef, { balance, withdrawTotal });
-      document.getElementById("balance").innerText = balance.toFixed(2);
-      tg.showAlert("✅ Withdraw request পাঠানো হয়েছে!");
-      showMain();
-    });
-
-    ["backFromAd","backFromRefer","backFromWithdraw"].forEach(id => 
-      document.getElementById(id)?.addEventListener("click", showMain)
-    );
+    // === Notice Popup ===
+    function showNotice(){
+      document.getElementById("noticeOverlay").style.display="flex";
+    }
+    function closeNotice(){
+      document.getElementById("noticeOverlay").style.display="none";
+    }
+    window.onload = function(){
+      setTimeout(showNotice,2000);
+    }
   </script>
 </body>
 </html>
