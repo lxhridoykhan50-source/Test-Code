@@ -47,7 +47,7 @@ input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:non
 <div class="info"><b>Balance:</b> <span id="balance">0</span> BDT</div>
 <div class="info"><b>Ads Watched:</b> <span id="views">0</span></div>
 <div class="info"><b>Referrals:</b> <span id="refCount">0</span></div>
-<div class="info"><b>Total Earned via Referrals:</b> <span id="refEarned">0</span> BDT</div>
+<div class="info"><b>Total Withdrawn:</b> <span id="totalWithdrawn">0</span> BDT</div>
 </div>
 </div>
 
@@ -123,21 +123,21 @@ const REF_BONUS = 5;
 let balance = parseFloat(localStorage.getItem("balance")) || 0;
 let views = parseInt(localStorage.getItem("views")) || 0;
 let refCount = parseInt(localStorage.getItem("refCount")) || 0;
-let refEarned = parseFloat(localStorage.getItem("refEarned")) || 0;
+let totalWithdrawn = parseFloat(localStorage.getItem("totalWithdrawn")) || 0;
 let claimedReferrals = JSON.parse(localStorage.getItem("claimedReferrals"))||[];
 
 function updateUI(){
 document.getElementById("balance").innerText = balance.toFixed(2);
 document.getElementById("views").innerText = views;
 document.getElementById("refCount").innerText = refCount;
-document.getElementById("refEarned").innerText = refEarned.toFixed(2);
+document.getElementById("totalWithdrawn").innerText = totalWithdrawn.toFixed(2);
 }
 
 function saveData(){
 localStorage.setItem("balance", balance.toFixed(2));
 localStorage.setItem("views", views);
 localStorage.setItem("refCount", refCount);
-localStorage.setItem("refEarned", refEarned.toFixed(2));
+localStorage.setItem("totalWithdrawn", totalWithdrawn.toFixed(2));
 localStorage.setItem("claimedReferrals", JSON.stringify(claimedReferrals));
 }
 
@@ -176,7 +176,9 @@ const account=document.getElementById("accountNumber").value.trim();
 if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
 if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
 if(amount>balance){ alert("You don't have enough balance."); return;}
-balance -= amount; saveData(); updateUI();
+balance -= amount; 
+totalWithdrawn += amount;
+saveData(); updateUI();
 document.getElementById("withdraw-section").innerHTML=`
 <h3>✅ Withdraw request submitted!</h3>
 <p>Method: ${method.toUpperCase()}</p>
@@ -186,6 +188,7 @@ document.getElementById("withdraw-section").innerHTML=`
 <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
 `;
 }
+
 function showReferral(){
 document.getElementById("referral-section").classList.remove("hidden");
 document.getElementById("withdraw-section").classList.add("hidden");
@@ -193,15 +196,19 @@ document.getElementById("ad-section").classList.add("hidden");
 document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
 }
 function copyReferral(){const ref=document.getElementById("refLink").innerText;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ref).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(ref));}else fallbackCopy(ref);function fallbackCopy(text){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('Referral link copied!');}catch(e){alert('Copy failed.');}ta.remove();}}
+
 function claimReferralBonus(){
 const code=document.getElementById("claimCode").value.trim();
 if(!code){alert("Please enter referral code."); return;}
 if(code==userId){alert("You cannot use your own referral code."); return;}
 if(claimedReferrals.includes(code)){alert("You already claimed bonus from this code."); return;}
-balance+=REF_BONUS; refCount++; refEarned+=REF_BONUS;
-claimedReferrals.push(code); saveData(); updateUI();
-alert(`🎉 Bonus ${REF_BONUS} BDT claimed successfully!`);
+balance+=REF_BONUS; 
+refCount++;
+claimedReferrals.push(code); 
+saveData(); updateUI();
+alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
 }
+
 function goBack(){document.getElementById("withdraw-section").classList.add("hidden");document.getElementById("referral-section").classList.add("hidden");document.getElementById("ad-section").classList.remove("hidden");updateUI();}
 updateUI();
 
