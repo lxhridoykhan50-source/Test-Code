@@ -78,17 +78,6 @@
       background: #00695c;
     }
   </style>
-  
-  <!-- ✅ Monetag SDK যুক্ত -->
-  <script src="https://cdn.monetag.com/ads.js"></script>
-  <script>
-    // Monetag initialization (নিজের zone ID বসান)
-    window.monetag = window.monetag || { cmd: [] };
-    monetag.cmd.push(function() {
-      monetag.init("YOUR_MONETAG_ZONE_ID"); 
-    });
-  </script>
-
 </head>
 <body>
 
@@ -110,14 +99,8 @@
     <button class="btn" id="referEarn">👥 Refer Earn</button>
     <button class="btn" id="withdraw">💰 Withdraw</button>
 
-    <!-- ✅ Ad Box (এখানে Monetag বিজ্ঞাপন দেখাবে) -->
-    <div id="adBox">
-      <p>🎬 বিজ্ঞাপন লোড হচ্ছে...</p>
-      <div id="monetagAdContainer" style="width:100%;height:250px;margin-top:10px;border-radius:10px;overflow:hidden;">
-        <!-- Monetag Ad Container -->
-      </div>
-      <button class="btn" id="backFromAd">🔙 Back</button>
-    </div>
+    <!-- Ad Box -->
+    <div id="adBox"></div>
 
     <!-- Refer Box -->
     <div id="referBox">
@@ -210,24 +193,38 @@
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "block");
     }
 
-    // 🎯 Start Earn (Monetag বিজ্ঞাপন)
+    // 🎯 Start Earn (Real Ad Integration)
     document.getElementById("startEarn").addEventListener("click", () => {
-      document.getElementById("adBox").style.display = "block";
+      const adBox = document.getElementById("adBox");
+      adBox.style.display = "block";
       document.querySelectorAll("#startEarn, #referEarn, #withdraw").forEach(btn => btn.style.display = "none");
 
-      // ✅ Monetag বিজ্ঞাপন লোড হবে
-      monetag.cmd.push(function() {
-        monetag.display("monetagAdContainer");
-      });
+      adBox.innerHTML = `
+        <p>🎬 নিচের বিজ্ঞাপনটি সম্পূর্ণ লোড হলে আপনি আয় পাবেন...</p>
+        <div id="realAdBox" style="margin:10px 0;"></div>
+        <button class="btn" id="backFromAd">🔙 Back</button>
+      `;
 
-      // 🎯 বিজ্ঞাপন দেখার পর রিওয়ার্ড (১০ সেকেন্ড পর)
-      setTimeout(() => {
-        tg.showAlert(`🎉 আপনি ৳${adPayout.toFixed(2)} আয় করেছেন!`);
-        balance += adPayout;
-        update(userRef, { balance });
-        document.getElementById("balance").innerText = balance.toFixed(2);
-        showMain();
-      }, 10000);
+      // libtl.com বিজ্ঞাপন স্ক্রিপ্ট যোগ
+      const script = document.createElement("script");
+      script.src = "//libtl.com/sdk.js";
+      script.dataset.zone = "9777736";
+      script.dataset.sdk = "show_9777736";
+      document.getElementById("realAdBox").appendChild(script);
+
+      // ১০ সেকেন্ড পর আয় যোগ
+      let time = 10;
+      const countdown = setInterval(() => {
+        time--;
+        if (time <= 0) {
+          clearInterval(countdown);
+          tg.showAlert(`🎉 আপনি ৳${adPayout.toFixed(2)} আয় করেছেন!`);
+          balance += adPayout;
+          update(userRef, { balance });
+          document.getElementById("balance").innerText = balance.toFixed(2);
+          showMain();
+        }
+      }, 1000);
     });
 
     // 👥 Refer
@@ -282,8 +279,8 @@
       showMain();
     });
 
-    ["backFromAd","backFromRefer","backFromWithdraw"].forEach(id =>
-      document.getElementById(id).addEventListener("click", showMain)
+    ["backFromAd","backFromRefer","backFromWithdraw"].forEach(id => 
+      document.getElementById(id)?.addEventListener("click", showMain)
     );
   </script>
 </body>
