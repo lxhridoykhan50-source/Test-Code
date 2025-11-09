@@ -2,82 +2,87 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<title>Ads Income Place</title>
+<title>Premium Ads Income</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="//libtl.com/sdk.js" data-zone="9777736" data-sdk="show_9777736"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
-    authDomain: "hridoy-f9c90.firebaseapp.com",
-    databaseURL: "https://hridoy-f9c90-default-rtdb.firebaseio.com",
-    projectId: "hridoy-f9c90",
-    storageBucket: "hridoy-f9c90.firebasestorage.app",
-    messagingSenderId: "378490678321",
-    appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
-    measurementId: "G-5X6Z7BWTFY"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
+  authDomain: "hridoy-f9c90.firebaseapp.com",
+  databaseURL: "https://hridoy-f9c90-default-rtdb.firebaseio.com",
+  projectId: "hridoy-f9c90",
+  storageBucket: "hridoy-f9c90.firebasestorage.app",
+  messagingSenderId: "378490678321",
+  appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
+  measurementId: "G-5X6Z7BWTFY"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  const tg = (window.Telegram && window.Telegram.WebApp)?window.Telegram.WebApp:null;
-  const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
-  const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
-  const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
+const tg = (window.Telegram && window.Telegram.WebApp)?window.Telegram.WebApp:null;
+const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
+const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
+const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
 
-  document.getElementById("user-name").innerText = userName;
-  document.getElementById("user-photo").src = photoUrl;
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("user-name").innerText = userName;
+    document.getElementById("user-photo").src = photoUrl;
+    updateUI();
+});
 
-  const REWARD = 0.05;
-  const MIN_WITHDRAW = 100;
-  const REF_BONUS = 5;
-  let adTimer = null;
-  const AD_DURATION = 15;
+const REWARD = 5;
+const MIN_WITHDRAW = 2000;
+const REF_BONUS = 50;
+const MIN_REF_FOR_WITHDRAW = 10;
+let adTimer = null;
+const AD_DURATION = 15;
 
-  // Firebase helper functions
-  async function getUserData() {
-    const dbRef = ref(db);
-    const snapshot = await get(child(dbRef, `users/${userId}`));
-    if(snapshot.exists()){
-      const data = snapshot.val();
-      if(!data.claimedReferrals) data.claimedReferrals = [];
-      if(!data.balance) data.balance = 0;
-      if(!data.views) data.views = 0;
-      if(!data.refCount) data.refCount = 0;
-      if(!data.totalWithdrawn) data.totalWithdrawn = 0;
-      return data;
-    } else {
-      const defaultData = { balance: 0, views:0, refCount:0, totalWithdrawn:0, claimedReferrals:[] };
-      await set(ref(db, `users/${userId}`), defaultData);
-      return defaultData;
-    }
+// Firebase functions
+async function getUserData() {
+  const dbRef = ref(db);
+  const snapshot = await get(child(dbRef, `users/${userId}`));
+  if(snapshot.exists()){
+    const data = snapshot.val();
+    if(!data.claimedReferrals) data.claimedReferrals = [];
+    if(!data.balance) data.balance = 0;
+    if(!data.views) data.views = 0;
+    if(!data.refCount) data.refCount = 0;
+    if(!data.totalWithdrawn) data.totalWithdrawn = 0;
+    return data;
+  } else {
+    const defaultData = { balance: 0, views:0, refCount:0, totalWithdrawn:0, claimedReferrals:[] };
+    await set(ref(db, `users/${userId}`), defaultData);
+    return defaultData;
   }
+}
 
-  async function saveUserData(data){
-    await update(ref(db, `users/${userId}`), data);
-  }
+async function saveUserData(data){
+  await update(ref(db, `users/${userId}`), data);
+}
 
-  async function updateUI(){
-    const data = await getUserData();
-    document.getElementById("balance").innerText = data.balance.toFixed(2);
-    document.getElementById("views").innerText = data.views;
-    document.getElementById("refCount").innerText = data.refCount;
-    document.getElementById("totalWithdrawn").innerText = data.totalWithdrawn.toFixed(2);
-  }
+async function updateUI(){
+  const data = await getUserData();
+  document.getElementById("balanceVal").innerText = data.balance.toFixed(2);
+  document.getElementById("viewsVal").innerText = data.views;
+  document.getElementById("refCountVal").innerText = data.refCount;
+  document.getElementById("withdrawnVal").innerText = data.totalWithdrawn.toFixed(2);
+}
 
-  // Watch Ad
-  async function watchAd(){
+// Watch Ad
+window.watchAd = async function(){
     const watchBtn=document.getElementById('watchBtn');
     const countdownEl=document.getElementById('countdown');
-    watchBtn.disabled=true; watchBtn.classList.add('muted');
+    watchBtn.disabled=true;
+    watchBtn.classList.add('muted');
     countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
-    
+
     try{ if(typeof window.show_9777736==="function"){ window.show_9777736(); } }catch(e){}
 
     let remaining=AD_DURATION;
@@ -92,27 +97,26 @@
         await saveUserData(data);
         countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
         document.getElementById('coinSound').play().catch(()=>{});
-        watchBtn.disabled=false; watchBtn.classList.remove('muted');
+        watchBtn.disabled=false;
+        watchBtn.classList.remove('muted');
         updateUI();
       }
     },1000);
-  }
+}
 
-  window.watchAd = watchAd;
-
-  // Withdraw
-  window.showWithdraw = function(){
+// Withdraw
+window.showWithdraw = function(){
     document.getElementById("withdraw-section").classList.remove("hidden");
     document.getElementById("ad-section").classList.add("hidden");
     document.getElementById("referral-section").classList.add("hidden");
-  }
+}
 
-  window.calculateBDT = function(){
+window.calculateBDT = function(){
     const amount=parseFloat(document.getElementById("balanceAmount").value)||0;
     document.getElementById("bdtValue").innerText=`You will get: ${amount.toFixed(2)} BDT`;
-  }
+}
 
-  window.submitWithdraw = async function(){
+window.submitWithdraw = async function(){
     const method=document.getElementById("method").value;
     const amount=parseFloat(document.getElementById("balanceAmount").value);
     const account=document.getElementById("accountNumber").value.trim();
@@ -120,6 +124,8 @@
     if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
     if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
     if(amount>data.balance){ alert("You don't have enough balance."); return;}
+    if(data.refCount < MIN_REF_FOR_WITHDRAW){ alert(`You need at least ${MIN_REF_FOR_WITHDRAW} referrals to withdraw.`); return; }
+
     data.balance -= amount;
     data.totalWithdrawn = (data.totalWithdrawn || 0) + amount;
     await saveUserData(data);
@@ -132,17 +138,17 @@
       <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
     `;
     updateUI();
-  }
+}
 
-  // Referral
-  window.showReferral = async function(){
+// Referral
+window.showReferral = async function(){
     document.getElementById("referral-section").classList.remove("hidden");
     document.getElementById("withdraw-section").classList.add("hidden");
     document.getElementById("ad-section").classList.add("hidden");
     document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
-  }
+}
 
-  window.copyReferral = function(){
+window.copyReferral = function(){
     const ref=document.getElementById("refLink").innerText;
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(ref).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(ref));
@@ -155,9 +161,9 @@
       try{document.execCommand('copy'); alert('Referral link copied!');}catch(e){alert('Copy failed.');}
       ta.remove();
     }
-  }
+}
 
-  window.claimReferralBonus = async function(){
+window.claimReferralBonus = async function(){
     const code=document.getElementById("claimCode").value.trim();
     const data = await getUserData();
     if(!code){alert("Please enter referral code."); return;}
@@ -169,43 +175,41 @@
     await saveUserData(data);
     alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
     updateUI();
-  }
+}
 
-  window.goBack = function(){
+window.goBack = function(){
     document.getElementById("withdraw-section").classList.add("hidden");
     document.getElementById("referral-section").classList.add("hidden");
     document.getElementById("ad-section").classList.remove("hidden");
     updateUI();
-  }
+}
 
-  // Notice
-  window.showNotice = function(){ document.getElementById("noticeOverlay").style.display="flex"; }
-  window.closeNotice = function(){ document.getElementById("noticeOverlay").style.display="none"; }
-
-  window.onload=function(){ setTimeout(showNotice,2000); updateUI(); }
+window.showNotice = function(){ document.getElementById("noticeOverlay").style.display="flex"; }
+window.closeNotice = function(){ document.getElementById("noticeOverlay").style.display="none"; }
+window.onload=function(){ setTimeout(showNotice,2000); updateUI(); }
 
 </script>
 
 <style>
-/* UI styling same as original */
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#4f46e5,#9333ea);min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px;color:#fff;}
-.container{width:100%;max-width:420px;display:flex;flex-direction:column;gap:20px;}
-h2{text-align:center;font-size:28px;font-weight:700;margin-bottom:5px;}
-.card{backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);background:rgba(255,255,255,0.12);border-radius:20px;padding:25px;box-shadow:0 8px 32px rgba(0,0,0,0.25);transition: transform 0.25s ease;}
-.card:hover{transform:translateY(-4px);}
-.profile{display:flex;flex-direction:column;align-items:center;gap:12px;}
-.profile img{width:80px;height:80px;border-radius:50%;border:3px solid #fff;}
-.user-name{font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px;}
-.verify-icon{color:#00bfff;font-size:18px;}
-.premium-icon{color:gold;font-size:18px;}
-.info{font-size:15px;margin-top:4px;}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;color:#fff;background:linear-gradient(90deg,#7c3aed,#4f46e5);transition:all 0.3s ease;}
+body{font-family:'Poppins',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;justify-content:center;padding:20px;}
+.container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;}
+h2{text-align:center;color:#3b3b3b;font-weight:700;font-size:28px;}
+.card{background:#fff;border-radius:15px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.1);transition:transform 0.3s;}
+.card:hover{transform:translateY(-3px);}
+.profile{display:flex;align-items:center;gap:15px;margin-bottom:15px;}
+.profile img{width:70px;height:70px;border-radius:50%;border:2px solid #4f46e5;}
+.user-name{font-weight:600;font-size:18px;color:#222;}
+.stats{display:flex;justify-content:space-between;margin-top:15px;}
+.stat-box{flex:1;background:#f5f5f5;padding:15px;margin:0 5px;border-radius:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.stat-box h4{margin-bottom:8px;color:#555;}
+.stat-box p{font-weight:600;font-size:16px;color:#111;}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:600;font-size:16px;cursor:pointer;margin-top:10px;color:#fff;background:linear-gradient(90deg,#7c3aed,#4f46e5);transition:all 0.3s;}
 .btn:hover{transform:scale(1.03);}
 .btn:active{transform:scale(0.98);}
-.back-btn{background:linear-gradient(90deg,#374151,#111827);}
-#countdown{margin-top:12px;font-size:14px;font-weight:bold;color:#ffeb3b;}
-input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:none;outline:none;font-size:15px;}
+.back-btn{background:#6b7280;}
+#countdown{margin-top:10px;font-size:14px;font-weight:bold;color:#ff9800;}
+input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ccc;outline:none;font-size:15px;}
 .hidden{display:none;}
 .muted{opacity:0.6;pointer-events:none;}
 #noticeOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:none;justify-content:center;align-items:center;z-index:9999;}
@@ -217,20 +221,38 @@ input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:non
 
 <body>
 <div class="container">
-<h2>🎥 ADS INCOME PLACE</h2>
+<h2>🎥 Premium Ads Income</h2>
 
-<div class="card" id="profile">
-<div class="profile">
+<div class="card profile">
 <img id="user-photo" src="https://telegram.org/img/t_logo.png" alt="Profile">
-<div class="user-name"><span class="verify-icon">✔️</span><span id="user-name">Loading...</span><span class="premium-icon">⭐</span></div>
-<div class="info"><b>Balance:</b> <span id="balance">0</span> BDT</div>
-<div class="info"><b>Ads Watched:</b> <span id="views">0</span></div>
-<div class="info"><b>Referrals:</b> <span id="refCount">0</span></div>
-<div class="info"><b>Total Withdrawn:</b> <span id="totalWithdrawn">0</span> BDT</div>
+<div class="user-name" id="user-name">Loading...</div>
+</div>
+
+<div class="stats">
+<div class="stat-box">
+<h4>Balance</h4>
+<p id="balanceVal">0</p>
+</div>
+<div class="stat-box">
+<h4>Ads Watched</h4>
+<p id="viewsVal">0</p>
+</div>
+</div>
+
+<div class="stats">
+<div class="stat-box">
+<h4>Referrals</h4>
+<p id="refCountVal">0</p>
+</div>
+<div class="stat-box">
+<h4>Total Withdrawn</h4>
+<p id="withdrawnVal">0</p>
 </div>
 </div>
 
 <div class="card" id="ad-section">
+<p>💰 প্রতি অ্যাড দেখার জন্য আপনি পাবেন ৫ টাকা।</p>
+<p>💰 প্রতি রেফারের জন্য আপনি পাবেন ৫০ টাকা।</p>
 <button class="btn" id="watchBtn" onclick="watchAd()">🎬 Watch Ad</button>
 <p id="countdown"></p>
 </div>
@@ -248,7 +270,7 @@ input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:non
 </select>
 <input type="number" id="balanceAmount" placeholder="Enter Amount" oninput="calculateBDT()">
 <p id="bdtValue">You will get: 0 BDT</p>
-<p style="color:#ffeb3b;font-size:13px;">⚠️ Minimum Withdraw: 100 BDT</p>
+<p style="color:#ff5722;font-size:13px;">⚠️ Minimum Withdraw: 2000 BDT & Minimum 10 Referrals Required</p>
 <input type="text" id="accountNumber" placeholder="Enter your account number">
 <button class="btn" onclick="submitWithdraw()">Submit</button>
 <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
@@ -272,7 +294,7 @@ input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:non
 <div id="noticeOverlay">
 <div class="notice-card">
 <span class="close-btn" onclick="closeNotice()">✖</span>
-<p>আসসালামু আলাইকুম প্রিয় গ্রাহক সবাই কেমন আছেন আশা করি সবাই আল্লাহর রহমতে ভালো আছেন।<br>আমাদের সম্পূর্ণ সেবা গ্রহণ করতে আপনাকে অবশ্যই এই টেলিগ্রাম চ্যানেলে জয়েন করতে হবে।</p>
+<p>আসসালামু আলাইকুম প্রিয় গ্রাহক সবাই কেমন আছেন আশা করি সবাই আল্লাহর রহমতে ভালো আছেন।<br>আমাদের সম্পূর্ণ সেবা গ্রহণ করতে আপনাকে অবশ্যই এই টেলিগ্রাম চ্যানেলে জয়েন করতে হবে।</p>
 <a href="https://t.me/+dSMh9u-1PIg0Njk1" class="btn" target="_blank">Join Channel</a>
 </div>
 </div>
