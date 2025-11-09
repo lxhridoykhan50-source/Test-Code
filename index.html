@@ -10,7 +10,7 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
@@ -26,12 +26,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// Telegram integration
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
 const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
 const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
 
-// 🔹 Helper function: Generate unique referral code
 function generateReferralCode() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "REF";
@@ -52,24 +52,23 @@ const MIN_REF_FOR_WITHDRAW = 10;
 const AD_DURATION = 15;
 let adTimer = null;
 
-// 🔹 Get or Create User Data
 async function getUserData() {
   const dbRef = ref(db);
   const snapshot = await get(child(dbRef, `users/${userId}`));
   if (snapshot.exists()) {
     const data = snapshot.val();
-    if (!data.claimedReferrals) data.claimedReferrals = [];
     if (!data.balance) data.balance = 0;
     if (!data.views) data.views = 0;
     if (!data.refCount) data.refCount = 0;
     if (!data.totalWithdrawn) data.totalWithdrawn = 0;
+    if (!data.claimedReferrals) data.claimedReferrals = [];
     if (!data.referralCode) {
       data.referralCode = generateReferralCode();
       await saveUserData(data);
     }
     return data;
   } else {
-    const defaultData = {
+    const newData = {
       balance: 0,
       views: 0,
       refCount: 0,
@@ -77,8 +76,8 @@ async function getUserData() {
       claimedReferrals: [],
       referralCode: generateReferralCode()
     };
-    await set(ref(db, `users/${userId}`), defaultData);
-    return defaultData;
+    await set(ref(db, `users/${userId}`), newData);
+    return newData;
   }
 }
 
@@ -94,15 +93,14 @@ async function updateUI() {
   document.getElementById("withdrawnVal").innerText = data.totalWithdrawn.toFixed(2);
 }
 
-// 🔹 Watch Ad & Earn
+// 🎬 Watch Ad
 window.watchAd = async function() {
   const watchBtn = document.getElementById('watchBtn');
   const countdownEl = document.getElementById('countdown');
   watchBtn.disabled = true;
-  watchBtn.classList.add('muted');
   countdownEl.innerText = `⏳ Please wait ${AD_DURATION} seconds...`;
 
-  try { if (typeof window.show_9777736 === "function") { window.show_9777736(); } } catch (e) {}
+  try { if (typeof window.show_9777736 === "function") window.show_9777736(); } catch (e) {}
 
   let remaining = AD_DURATION;
   adTimer = setInterval(async () => {
@@ -114,16 +112,15 @@ window.watchAd = async function() {
       data.balance += REWARD;
       data.views += 1;
       await saveUserData(data);
-      countdownEl.innerText = `🎉 You earned ${REWARD.toFixed(2)} BDT!`;
+      countdownEl.innerText = `🎉 You earned ${REWARD} BDT!`;
       document.getElementById('coinSound').play().catch(() => {});
       watchBtn.disabled = false;
-      watchBtn.classList.remove('muted');
       updateUI();
     }
   }, 1000);
 };
 
-// 🔹 Withdraw Section
+// 💸 Withdraw
 window.showWithdraw = function() {
   document.getElementById("withdraw-section").classList.remove("hidden");
   document.getElementById("ad-section").classList.add("hidden");
@@ -141,9 +138,9 @@ window.submitWithdraw = async function() {
   const account = document.getElementById("accountNumber").value.trim();
   const data = await getUserData();
   if (isNaN(amount) || amount < MIN_WITHDRAW) return alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`);
-  if (!account || account.length < 6) return alert("Please enter a valid account number.");
-  if (amount > data.balance) return alert("You don't have enough balance.");
-  if (data.refCount < MIN_REF_FOR_WITHDRAW) return alert(`You need at least ${MIN_REF_FOR_WITHDRAW} referrals.`);
+  if (!account || account.length < 6) return alert("Enter valid account number.");
+  if (amount > data.balance) return alert("Not enough balance.");
+  if (data.refCount < MIN_REF_FOR_WITHDRAW) return alert(`At least ${MIN_REF_FOR_WITHDRAW} referrals required.`);
 
   data.balance -= amount;
   data.totalWithdrawn += amount;
@@ -151,20 +148,19 @@ window.submitWithdraw = async function() {
   document.getElementById("withdraw-section").innerHTML = `
     <h3>✅ Withdraw request submitted!</h3>
     <p>Method: ${method.toUpperCase()}</p>
-    <p>Amount: ${amount.toFixed(2)} BDT</p>
+    <p>Amount: ${amount} BDT</p>
     <p>Account: ${account}</p>
-    <p>We will process your request soon.</p>
+    <p>We will process soon.</p>
     <button class="btn back-btn" onclick="goBack()">🔙 Back</button>`;
   updateUI();
 };
 
-// 🔹 Referral System
+// 🤝 Referral Section
 window.showReferral = async function() {
+  const data = await getUserData();
   document.getElementById("referral-section").classList.remove("hidden");
   document.getElementById("withdraw-section").classList.add("hidden");
   document.getElementById("ad-section").classList.add("hidden");
-
-  const data = await getUserData();
   document.getElementById("refLink").innerText = `https://t.me/ads25_income_bot?start=${data.referralCode}`;
 };
 
@@ -173,25 +169,32 @@ window.copyReferral = function() {
   navigator.clipboard.writeText(ref).then(() => alert("Referral link copied!"));
 };
 
+// ✅ Fixed: Claim Referral Bonus
 window.claimReferralBonus = async function() {
   const code = document.getElementById("claimCode").value.trim();
+  if (!code) return alert("Enter referral code.");
   const data = await getUserData();
-  if (!code) return alert("Please enter referral code.");
+
   if (code === data.referralCode) return alert("You cannot use your own referral code.");
   if (data.claimedReferrals.includes(code)) return alert("Already claimed from this code.");
 
-  // 🔍 Find the user who owns this referral code
   const dbRef = ref(db, "users");
-  const q = query(dbRef, orderByChild("referralCode"), equalTo(code));
-  const snapshot = await get(q);
+  const allUsers = await get(dbRef);
 
-  if (!snapshot.exists()) {
-    return alert("Invalid referral code.");
-  }
+  if (!allUsers.exists()) return alert("Invalid referral code.");
 
-  // Update both users
-  const referrerId = Object.keys(snapshot.val())[0];
-  const referrerData = snapshot.val()[referrerId];
+  let referrerId = null;
+  let referrerData = null;
+
+  allUsers.forEach((snap) => {
+    const user = snap.val();
+    if (user.referralCode === code) {
+      referrerId = snap.key;
+      referrerData = user;
+    }
+  });
+
+  if (!referrerId || !referrerData) return alert("Invalid referral code.");
 
   // Update referrer
   referrerData.balance = (referrerData.balance || 0) + REF_BONUS;
@@ -206,7 +209,7 @@ window.claimReferralBonus = async function() {
   updateUI();
 };
 
-// 🔹 Go Back
+// 🔙 Go Back
 window.goBack = function() {
   document.getElementById("withdraw-section").classList.add("hidden");
   document.getElementById("referral-section").classList.add("hidden");
@@ -214,26 +217,24 @@ window.goBack = function() {
   updateUI();
 };
 
-// 🔹 Notice Overlay
+// 🔔 Notice
 window.showNotice = function() { document.getElementById("noticeOverlay").style.display = "flex"; };
 window.closeNotice = function() { document.getElementById("noticeOverlay").style.display = "none"; };
 window.onload = function() { setTimeout(showNotice, 2000); updateUI(); };
 </script>
 
-<!-- 🌈 Dark Blue-Purple Theme -->
+<!-- 💜 Style -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
 body{background:linear-gradient(135deg,#1e1b4b,#312e81,#3730a3);color:#fff;min-height:100vh;display:flex;justify-content:center;padding:20px;}
 .container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;animation:fadeIn 1s ease;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 .card{background:rgba(255,255,255,0.08);border-radius:16px;padding:22px;backdrop-filter:blur(12px);box-shadow:0 0 20px rgba(79,70,229,0.3);}
-.card:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(99,102,241,0.5);}
 .profile{display:flex;align-items:center;gap:15px;}
 .profile img{width:70px;height:70px;border-radius:50%;border:3px solid #818cf8;box-shadow:0 0 15px rgba(99,102,241,0.6);}
 .stats{display:flex;justify-content:space-between;gap:10px;}
-.stat-box{flex:1;background:rgba(255,255,255,0.1);padding:12px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,0.15);}
+.stat-box{flex:1;background:rgba(255,255,255,0.1);padding:12px;border-radius:12px;text-align:center;}
 .stat-box h4{color:#c7d2fe;}
-.stat-box p{font-weight:bold;}
 .btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(90deg,#6366f1,#4f46e5);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;transition:.3s;}
 .btn:hover{transform:scale(1.03);box-shadow:0 0 20px rgba(99,102,241,0.6);}
 .back-btn{background:linear-gradient(90deg,#6b7280,#4b5563);}
@@ -242,7 +243,6 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 #noticeOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:999;}
 .notice-card{background:rgba(255,255,255,0.1);color:#fff;width:90%;max-width:380px;padding:25px 20px;border-radius:16px;text-align:center;box-shadow:0 0 25px rgba(99,102,241,0.6);position:relative;}
 .close-btn{position:absolute;top:10px;right:15px;font-size:25px;color:#fff;cursor:pointer;transition:0.3s;}
-.close-btn:hover{color:#f87171;transform:scale(1.2);}
 </style>
 </head>
 <body>
@@ -266,8 +266,8 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 </div>
 
 <div class="card" id="ad-section">
-<p>You will get 5 Tk for each ad you watch.</p>
-<p>You will get 50 Tk for each referral</p>
+<p>🎬 Watch ads and earn 5 Tk per view.</p>
+<p>🤝 Get 50 Tk per referral.</p>
 <button class="btn" id="watchBtn" onclick="watchAd()">🎬 Watch Ad</button>
 <p id="countdown"></p>
 </div>
@@ -285,8 +285,8 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 </select>
 <input type="number" id="balanceAmount" placeholder="Enter Amount" oninput="calculateBDT()">
 <p id="bdtValue">You will get: 0 BDT</p>
-<p style="font-size:13px;color:#f87171;">⚠️ Minimum Withdraw: 2000 BDT & 10 Referrals Required</p>
-<input type="text" id="accountNumber" placeholder="Enter your account number">
+<p style="font-size:13px;color:#f87171;">⚠️ Minimum 2000 BDT & 10 Referrals Required</p>
+<input type="text" id="accountNumber" placeholder="Enter account number">
 <button class="btn" onclick="submitWithdraw()">Submit</button>
 <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
 </div>
@@ -304,13 +304,15 @@ input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px 
 </div>
 </div>
 
-<audio id="coinSound"><source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg"></audio>
+<audio id="coinSound">
+<source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg">
+</audio>
 
 <div id="noticeOverlay">
   <div class="notice-card">
     <span class="close-btn" onclick="closeNotice()">✖</span>
-    <p>আসসালামু আলাইকুম প্রিয় গ্রাহক ❤️<br><br>
-    আমাদের অফিসিয়াল Telegram চ্যানেলে অবশ্যই যোগ দিন সর্বশেষ আপডেট পেতে👇</p>
+    <p>আসসালামু আলাইকুম ❤️<br><br>
+    অফিসিয়াল Telegram চ্যানেলে যোগ দিন👇</p>
     <a href="https://t.me/ads25_income_channel" class="btn" target="_blank">Join Channel</a>
   </div>
 </div>
