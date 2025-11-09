@@ -7,6 +7,30 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="//libtl.com/sdk.js" data-zone="9777736" data-sdk="show_9777736"></script>
 
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
+    authDomain: "hridoy-f9c90.firebaseapp.com",
+    databaseURL: "https://hridoy-f9c90-default-rtdb.firebaseio.com",
+    projectId: "hridoy-f9c90",
+    storageBucket: "hridoy-f9c90.firebasestorage.app",
+    messagingSenderId: "378490678321",
+    appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
+    measurementId: "G-5X6Z7BWTFY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const database = getDatabase(app);
+
+  window.firebaseApp = { database, ref, set, get, child }; // Make accessible globally
+</script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#4f46e5,#9333ea);min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px;color:#fff;}
@@ -105,7 +129,7 @@ input,select{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:non
 </div>
 </div>
 
-<script>
+<script type="module">
 const tg = (window.Telegram && window.Telegram.WebApp)?window.Telegram.WebApp:null;
 if(tg && typeof tg.expand==="function"){ try{ tg.expand(); }catch(e){console.log(e);} }
 const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
@@ -120,102 +144,143 @@ const MIN_WITHDRAW = 100;
 const REF_BONUS = 5;
 
 // State
-let balance = parseFloat(localStorage.getItem("balance")) || 0;
-let views = parseInt(localStorage.getItem("views")) || 0;
-let refCount = parseInt(localStorage.getItem("refCount")) || 0;
-let totalWithdrawn = parseFloat(localStorage.getItem("totalWithdrawn")) || 0;
-let claimedReferrals = JSON.parse(localStorage.getItem("claimedReferrals"))||[];
+let balance = 0;
+let views = 0;
+let refCount = 0;
+let totalWithdrawn = 0;
+let claimedReferrals = [];
 
+// Firebase helper
+const { database, ref, set, get, child } = window.firebaseApp;
+
+// --- UI Update ---
 function updateUI(){
-document.getElementById("balance").innerText = balance.toFixed(2);
-document.getElementById("views").innerText = views;
-document.getElementById("refCount").innerText = refCount;
-document.getElementById("totalWithdrawn").innerText = totalWithdrawn.toFixed(2);
+  document.getElementById("balance").innerText = balance.toFixed(2);
+  document.getElementById("views").innerText = views;
+  document.getElementById("refCount").innerText = refCount;
+  document.getElementById("totalWithdrawn").innerText = totalWithdrawn.toFixed(2);
 }
 
-function saveData(){
-localStorage.setItem("balance", balance.toFixed(2));
-localStorage.setItem("views", views);
-localStorage.setItem("refCount", refCount);
-localStorage.setItem("totalWithdrawn", totalWithdrawn.toFixed(2));
-localStorage.setItem("claimedReferrals", JSON.stringify(claimedReferrals));
+// --- Save Data to Firebase ---
+function saveData() {
+  const userData = {
+    balance: balance.toFixed(2),
+    views,
+    refCount,
+    totalWithdrawn: totalWithdrawn.toFixed(2),
+    claimedReferrals
+  };
+  set(ref(database, 'users/' + userId), userData)
+    .then(() => console.log("Data saved to Firebase"))
+    .catch(err => console.error("Firebase save error:", err));
 }
 
+// --- Load Data from Firebase ---
+function loadData() {
+  const dbRef = ref(database);
+  get(child(dbRef, `users/${userId}`)).then((snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      balance = parseFloat(data.balance) || 0;
+      views = parseInt(data.views) || 0;
+      refCount = parseInt(data.refCount) || 0;
+      totalWithdrawn = parseFloat(data.totalWithdrawn) || 0;
+      claimedReferrals = data.claimedReferrals || [];
+    } else {
+      console.log("No data found, starting fresh.");
+    }
+    updateUI();
+  }).catch((error) => {
+    console.error("Error fetching data:", error);
+  });
+}
+
+// --- Ad Section ---
 function tryShowAd(){ if(typeof window.show_9777736==="function"){ try{ window.show_9777736(); }catch(e){console.log(e);} } }
-
 const AD_DURATION = 15;
 let adTimer = null;
 
 function watchAd(){
-const watchBtn=document.getElementById('watchBtn');
-const countdownEl=document.getElementById('countdown');
-watchBtn.disabled=true; watchBtn.classList.add('muted');
-countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
-tryShowAd();
-let remaining=AD_DURATION;
-adTimer=setInterval(()=>{
-remaining--;
-countdownEl.innerText=`⏳ Please wait ${remaining} seconds...`;
-if(remaining<=0){
-clearInterval(adTimer);
-balance+=REWARD; views++;
-saveData(); updateUI();
-countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
-document.getElementById('coinSound').play().catch(()=>{});
-watchBtn.disabled=false; watchBtn.classList.remove('muted');
-}
-},1000);
+  const watchBtn=document.getElementById('watchBtn');
+  const countdownEl=document.getElementById('countdown');
+  watchBtn.disabled=true; watchBtn.classList.add('muted');
+  countdownEl.innerText=`⏳ Please wait ${AD_DURATION} seconds...`;
+  tryShowAd();
+  let remaining=AD_DURATION;
+  adTimer=setInterval(()=>{
+    remaining--;
+    countdownEl.innerText=`⏳ Please wait ${remaining} seconds...`;
+    if(remaining<=0){
+      clearInterval(adTimer);
+      balance+=REWARD; views++;
+      saveData(); updateUI();
+      countdownEl.innerText=`🎉 You earned ${REWARD.toFixed(2)} BDT!`;
+      document.getElementById('coinSound').play().catch(()=>{});
+      watchBtn.disabled=false; watchBtn.classList.remove('muted');
+    }
+  },1000);
 }
 
+// --- Withdraw ---
 function showWithdraw(){document.getElementById("withdraw-section").classList.remove("hidden");document.getElementById("ad-section").classList.add("hidden");document.getElementById("referral-section").classList.add("hidden");}
 function calculateBDT(){const amount=parseFloat(document.getElementById("balanceAmount").value)||0;document.getElementById("bdtValue").innerText=`You will get: ${amount.toFixed(2)} BDT`;}
 function submitWithdraw(){
-const method=document.getElementById("method").value;
-const amount=parseFloat(document.getElementById("balanceAmount").value);
-const account=document.getElementById("accountNumber").value.trim();
-if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
-if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
-if(amount>balance){ alert("You don't have enough balance."); return;}
-balance -= amount; 
-totalWithdrawn += amount;
-saveData(); updateUI();
-document.getElementById("withdraw-section").innerHTML=`
-<h3>✅ Withdraw request submitted!</h3>
-<p>Method: ${method.toUpperCase()}</p>
-<p>Amount: ${amount.toFixed(2)} BDT</p>
-<p>Account Number: ${account}</p>
-<p>We will process your request soon.</p>
-<button class="btn back-btn" onclick="goBack()">🔙 Back</button>
-`;
+  const method=document.getElementById("method").value;
+  const amount=parseFloat(document.getElementById("balanceAmount").value);
+  const account=document.getElementById("accountNumber").value.trim();
+  if(isNaN(amount)||amount<MIN_WITHDRAW){ alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`); return;}
+  if(!account||account.length<6){ alert("Please enter a valid account number."); return;}
+  if(amount>balance){ alert("You don't have enough balance."); return;}
+  balance -= amount;
+  totalWithdrawn += amount;
+  saveData(); updateUI();
+  document.getElementById("withdraw-section").innerHTML=`
+    <h3>✅ Withdraw request submitted!</h3>
+    <p>Method: ${method.toUpperCase()}</p>
+    <p>Amount: ${amount.toFixed(2)} BDT</p>
+    <p>Account Number: ${account}</p>
+    <p>We will process your request soon.</p>
+    <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
+  `;
 }
 
+// --- Referral ---
 function showReferral(){
-document.getElementById("referral-section").classList.remove("hidden");
-document.getElementById("withdraw-section").classList.add("hidden");
-document.getElementById("ad-section").classList.add("hidden");
-document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
+  document.getElementById("referral-section").classList.remove("hidden");
+  document.getElementById("withdraw-section").classList.add("hidden");
+  document.getElementById("ad-section").classList.add("hidden");
+  document.getElementById("refLink").innerText=`https://t.me/ads25_income_bot?start=${userId}`;
 }
-function copyReferral(){const ref=document.getElementById("refLink").innerText;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ref).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(ref));}else fallbackCopy(ref);function fallbackCopy(text){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('Referral link copied!');}catch(e){alert('Copy failed.');}ta.remove();}}
-
+function copyReferral(){
+  const refLink=document.getElementById("refLink").innerText;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(refLink).then(()=>alert("Referral link copied!")).catch(()=>fallbackCopy(refLink));
+  } else fallbackCopy(refLink);
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');alert('Referral link copied!');}catch(e){alert('Copy failed.');}ta.remove();
+  }
+}
 function claimReferralBonus(){
-const code=document.getElementById("claimCode").value.trim();
-if(!code){alert("Please enter referral code."); return;}
-if(code==userId){alert("You cannot use your own referral code."); return;}
-if(claimedReferrals.includes(code)){alert("You already claimed bonus from this code."); return;}
-balance+=REF_BONUS; 
-refCount++;
-claimedReferrals.push(code); 
-saveData(); updateUI();
-alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
+  const code=document.getElementById("claimCode").value.trim();
+  if(!code){alert("Please enter referral code."); return;}
+  if(code==userId){alert("You cannot use your own referral code."); return;}
+  if(claimedReferrals.includes(code)){alert("You already claimed bonus from this code."); return;}
+  balance+=REF_BONUS;
+  refCount++;
+  claimedReferrals.push(code);
+  saveData(); updateUI();
+  alert(`🎉 Bonus ${REF_BONUS} BDT added to your balance!`);
 }
 
+// --- Navigation ---
 function goBack(){document.getElementById("withdraw-section").classList.add("hidden");document.getElementById("referral-section").classList.add("hidden");document.getElementById("ad-section").classList.remove("hidden");updateUI();}
-updateUI();
 
-// Notice Popup
+// --- Notice ---
 function showNotice(){document.getElementById("noticeOverlay").style.display="flex";}
 function closeNotice(){document.getElementById("noticeOverlay").style.display="none";}
-window.onload=function(){setTimeout(showNotice,2000);}
+
+window.onload=function(){setTimeout(showNotice,2000); loadData();}
 </script>
 </body>
 </html>
