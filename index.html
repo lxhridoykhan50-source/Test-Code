@@ -70,7 +70,7 @@
   }
   button:hover {background:#1d4ed8;}
 
-  /* ============ Chat Section ============ */
+  /* Chat Section */
   .chatHeader {
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(20px);
@@ -117,25 +117,16 @@
     border-radius:14px;
     max-width:80%;
     position:relative;
-    animation: slideIn 0.3s ease;
     word-wrap: break-word;
+    animation: slideIn 0.3s ease;
   }
   @keyframes slideIn {
     from {transform: translateY(10px); opacity:0;}
     to {transform: translateY(0); opacity:1;}
   }
-  .me {
-    background:#2563eb;
-    color:#fff;
-    margin-left:auto;
-    border-bottom-right-radius:0;
-  }
-  .other {
-    background:rgba(255,255,255,0.25);
-    color:#fff;
-    margin-right:auto;
-    border-bottom-left-radius:0;
-  }
+  .me { background:#2563eb; color:#fff; margin-left:auto; border-bottom-right-radius:0; }
+  .other { background:rgba(255,255,255,0.25); color:#fff; margin-right:auto; border-bottom-left-radius:0; }
+
   .time {
     font-size:11px;
     opacity:0.8;
@@ -148,11 +139,7 @@
     margin-top:12px;
     gap:6px;
   }
-  .sendArea input {
-    flex:1;
-    border:none;
-    padding:10px;
-  }
+  .sendArea input { flex:1; border:none; padding:10px; }
   .sendBtn {
     background:#60a5fa;
     border:none;
@@ -204,21 +191,21 @@
 </head>
 <body>
 
-<!-- 🔐 Secret Code -->
+<!-- Secret Access -->
 <div id="codeBox" class="box">
   <h2>🔐 Secret Access</h2>
   <input type="password" id="secretCode" placeholder="সিক্রেট কোড লিখুন">
   <button onclick="checkCode()">প্রবেশ করুন</button>
 </div>
 
-<!-- 👤 Name Box -->
+<!-- Name Box -->
 <div id="nameBox" class="box" style="display:none;">
   <h2>👤 আপনার নাম লিখুন</h2>
   <input type="text" id="userName" placeholder="যেমনঃ example">
   <button onclick="setName()">চ্যাট শুরু করুন</button>
 </div>
 
-<!-- 💬 Chat Box -->
+<!-- Chat Box -->
 <div id="chatBox" class="box" style="display:none;">
   <div class="chatHeader">
     <h2>💬 Smart Messenger</h2>
@@ -240,11 +227,7 @@
 </div>
 
 <!-- Context Menu -->
-<div class="contextMenu" id="contextMenu">
-  <button onclick="editMessage()">Edit Message</button>
-  <button onclick="replyMessage()">Reply</button>
-  <button onclick="deleteOwnMessage()">Delete Message</button>
-</div>
+<div class="contextMenu" id="contextMenu"></div>
 
 <audio id="notifySound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_ef6a2a3b59.mp3?filename=notification-1-126517.mp3"></audio>
 
@@ -267,15 +250,12 @@
   const db = getDatabase(app);
 
   const SECRET = "199234";
-  const codeBox = document.getElementById("codeBox");
-  const nameBox = document.getElementById("nameBox");
-  const chatBox = document.getElementById("chatBox");
   const messages = document.getElementById("messages");
   const msgInput = document.getElementById("msgInput");
-  const sound = document.getElementById("notifySound");
   const typingText = document.getElementById("typingText");
   const onlineList = document.getElementById("onlineUsers");
   const contextMenu = document.getElementById("contextMenu");
+  const sound = document.getElementById("notifySound");
 
   let user = localStorage.getItem("smartUser") || "";
   let typingTimeout;
@@ -286,8 +266,8 @@
   let selectedMsgData = null;
 
   if (user) {
-    codeBox.style.display="none";
-    chatBox.style.display="block";
+    document.getElementById("codeBox").style.display="none";
+    document.getElementById("chatBox").style.display="block";
     setOnline(user);
     loadMessages();
     showOnlineUsers();
@@ -295,10 +275,9 @@
   }
 
   window.checkCode = () => {
-    const code = document.getElementById("secretCode").value.trim();
-    if(code === SECRET){
-      codeBox.style.display="none";
-      nameBox.style.display="block";
+    if(document.getElementById("secretCode").value.trim() === SECRET){
+      document.getElementById("codeBox").style.display="none";
+      document.getElementById("nameBox").style.display="block";
     } else alert("❌ ভুল সিক্রেট কোড!");
   };
 
@@ -307,34 +286,45 @@
     if(!name) return alert("নাম লিখুন!");
     user = name;
     localStorage.setItem("smartUser", name);
-    nameBox.style.display="none";
-    chatBox.style.display="block";
+    document.getElementById("nameBox").style.display="none";
+    document.getElementById("chatBox").style.display="block";
     setOnline(user);
     loadMessages();
     showOnlineUsers();
     watchTyping();
   };
 
+  /* 🔥 FIXED — Reply system */
   window.sendMsg = async () => {
     const text = msgInput.value.trim();
     if(!text) return;
-    const msgRef = ref(db, "messages");
-    await push(msgRef, {user,text,time:new Date().toLocaleTimeString(),createdAt:serverTimestamp(), reply: selectedMsgData ? selectedMsgData : null});
+
+    await push(ref(db,"messages"), {
+      user,
+      text,
+      time: new Date().toLocaleTimeString(),
+      createdAt: serverTimestamp(),
+      reply: selectedMsgKey ? {
+        key: selectedMsgKey,
+        user: selectedMsgData.user,
+        text: selectedMsgData.text
+      } : null
+    });
+
     msgInput.value="";
     selectedMsgKey = "";
     selectedMsgData = null;
-    update(ref(db, "typing/"+user), {typing:false});
+    update(ref(db,"typing/"+user), {typing:false});
   };
 
   window.userTyping = () => {
-    update(ref(db, "typing/"+user), {typing:true});
+    update(ref(db,"typing/"+user), {typing:true});
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(()=>update(ref(db,"typing/"+user),{typing:false}),2000);
   };
 
   function watchTyping(){
-    const tRef = ref(db,"typing");
-    onValue(tRef,snap=>{
+    onValue(ref(db,"typing"), snap => {
       let someoneTyping="";
       snap.forEach(c=>{
         const d=c.val();
@@ -344,81 +334,30 @@
     });
   }
 
+  /* 🔥 FIXED — load messages + reply display */
   function loadMessages(){
-    const msgRef = ref(db, "messages");
-    onValue(msgRef, snap => {
+    onValue(ref(db,"messages"), snap => {
       const total = snap.size;
       if(total > lastMsgCount && lastMsgCount !== 0) sound.play();
       lastMsgCount = total;
 
       messages.innerHTML = "";
-      let msgMap = {};
-      snap.forEach(child => {
-        const key = child.key;
-        const d = child.val();
-        msgMap[key] = d;
-        d.key = key;
-      });
+      let all = {};
 
-      snap.forEach(child => {
-        const key = child.key;
-        const d = child.val();
-        if(d.reply) return; // skip replies here
+      snap.forEach(c => all[c.key] = {...c.val(), key: c.key});
 
-        const div = document.createElement("div");
-        div.classList.add("msg");
-        div.classList.add(d.user === user ? "me" : "other");
-        div.dataset.key = key;
-        div.innerHTML = `<div><b>${d.user}:</b> ${d.text}</div>
-                         <div class="time">${d.time||""}</div>`;
+      snap.forEach(c => {
+        const d = c.val();
+        const key = c.key;
+        if(d.reply) return;
 
-        if(d.user === user){
-          div.addEventListener("contextmenu", e=>{
-            e.preventDefault();
-            selectedMsgKey = key;
-            selectedMsgData = d;
-            showContextMenu(e.pageX, e.pageY);
-          });
-        }
-
-        if(user === ADMIN){
-          const del = document.createElement("button");
-          del.innerText = "×";
-          del.style.position = "absolute";
-          del.style.top = "-8px";
-          del.style.right = "-8px";
-          del.style.background = "#ef4444";
-          del.style.color = "#fff";
-          del.style.border = "none";
-          del.style.borderRadius = "50%";
-          del.style.width = "20px";
-          del.style.height = "20px";
-          del.style.cursor = "pointer";
-          del.onclick = () => deleteMsg(key);
-          div.appendChild(del);
-        }
-
+        const div = createMessageBubble(d, key);
         messages.appendChild(div);
 
-        // Show replies
-        snap.forEach(repChild=>{
-          const rData = repChild.val();
-          if(rData.reply && rData.reply.user === d.user && rData.reply.text === d.text){
-            const replyDiv = document.createElement("div");
-            replyDiv.classList.add("msg");
-            replyDiv.classList.add(rData.user === user ? "me" : "other");
-            replyDiv.style.marginLeft = "20px";
-            replyDiv.style.borderLeft = "3px solid #60a5fa";
-            replyDiv.innerHTML = `<div><b>${rData.user}:</b> ${rData.text}</div>
-                                  <div class="time">${rData.time||""}</div>`;
-            if(rData.user === user){
-              replyDiv.addEventListener("contextmenu", e=>{
-                e.preventDefault();
-                selectedMsgKey = repChild.key;
-                selectedMsgData = rData;
-                showContextMenu(e.pageX, e.pageY);
-              });
-            }
+        snap.forEach(r => {
+          const rd = r.val();
+          if(rd.reply && rd.reply.key === key){
+            const replyDiv = createReplyBubble(rd, r.key);
             messages.appendChild(replyDiv);
           }
         });
@@ -428,15 +367,84 @@
     });
   }
 
+  /* Original message bubble */
+  function createMessageBubble(d, key){
+    const div = document.createElement("div");
+    div.classList.add("msg", d.user === user ? "me" : "other");
+
+    div.innerHTML = `
+      <div><b>${d.user}:</b> ${d.text}</div>
+      <div class="time">${d.time||""}</div>
+    `;
+
+    /* 🔥 FIXED — context menu options based on permissions */
+    div.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      selectedMsgKey = key;
+      selectedMsgData = d;
+
+      if(d.user === user){
+        contextMenu.innerHTML = `
+          <button onclick="editMessage()">Edit Message</button>
+          <button onclick="replyMessage()">Reply</button>
+          <button onclick="deleteOwnMessage()">Delete Message</button>
+        `;
+      } else {
+        contextMenu.innerHTML = `
+          <button onclick="replyMessage()">Reply</button>
+        `;
+      }
+
+      showContextMenu(e.pageX, e.pageY);
+    });
+
+    return div;
+  }
+
+  /* Reply bubble */
+  function createReplyBubble(d, key){
+    const div = document.createElement("div");
+    div.classList.add("msg", d.user === user ? "me" : "other");
+    div.style.marginLeft = "20px";
+    div.style.borderLeft = "3px solid #60a5fa";
+
+    div.innerHTML = `
+      <div style="font-size:12px; opacity:0.8; border-left:3px solid #fff; padding-left:6px; margin-bottom:4px;">
+        <b>${d.reply.user}</b>: ${d.reply.text}
+      </div>
+      <div><b>${d.user}:</b> ${d.text}</div>
+      <div class="time">${d.time||""}</div>
+    `;
+
+    div.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      selectedMsgKey = key;
+      selectedMsgData = d;
+
+      if(d.user === user){
+        contextMenu.innerHTML = `
+          <button onclick="editMessage()">Edit Message</button>
+          <button onclick="replyMessage()">Reply</button>
+          <button onclick="deleteOwnMessage()">Delete Message</button>
+        `;
+      } else {
+        contextMenu.innerHTML = `<button onclick="replyMessage()">Reply</button>`;
+      }
+
+      showContextMenu(e.pageX, e.pageY);
+    });
+
+    return div;
+  }
+
   function setOnline(name){
-    const userRef=ref(db,"online/"+name);
+    const userRef = ref(db,"online/"+name);
     set(userRef,{online:true,lastSeen:serverTimestamp()});
     window.addEventListener("beforeunload",()=>remove(userRef));
   }
 
   function showOnlineUsers(){
-    const oRef=ref(db,"online");
-    onValue(oRef,snap=>{
+    onValue(ref(db,"online"), snap=>{
       onlineList.innerHTML="";
       snap.forEach(child=>{
         onlineList.innerHTML+=`<li>🟢 ${child.key}</li>`;
@@ -447,52 +455,33 @@
   window.logout = ()=>{
     localStorage.removeItem("smartUser");
     remove(ref(db,"online/"+user));
-    chatBox.style.display="none";
-    nameBox.style.display="none";
-    codeBox.style.display="block";
-    document.getElementById("secretCode").value="";
-    user="";
+    location.reload();
   };
 
-  // Context Menu Functions
-  function showContextMenu(x, y){
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
-    contextMenu.style.display = "block";
+  function showContextMenu(x,y){
+    contextMenu.style.left = x+"px";
+    contextMenu.style.top = y+"px";
+    contextMenu.style.display="block";
   }
-
-  window.onclick = ()=> contextMenu.style.display = "none";
+  window.onclick = ()=> contextMenu.style.display="none";
 
   window.editMessage = ()=>{
-    if(selectedMsgKey && selectedMsgData){
-      const newText = prompt("Edit your message:", selectedMsgData.text);
-      if(newText) update(ref(db,"messages/"+selectedMsgKey), {text:newText});
-    }
-    contextMenu.style.display = "none";
+    const newText = prompt("Edit your message:", selectedMsgData.text);
+    if(newText) update(ref(db,"messages/"+selectedMsgKey), {text:newText});
+    contextMenu.style.display="none";
   };
 
   window.replyMessage = ()=>{
-    if(selectedMsgKey && selectedMsgData){
-      msgInput.value = `@${selectedMsgData.user}: `;
-      msgInput.focus();
-    }
-    contextMenu.style.display = "none";
+    msgInput.value = "";
+    msgInput.focus();
+    contextMenu.style.display="none";
   };
 
   window.deleteOwnMessage = ()=>{
-    if(selectedMsgKey && selectedMsgData && selectedMsgData.user === user){
-      if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
-        remove(ref(db,"messages/"+selectedMsgKey));
-      }
-    }
-    contextMenu.style.display = "none";
-  };
-
-  window.deleteMsg = async (id)=>{
-    if(user!==ADMIN) return;
     if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
-      await remove(ref(db,"messages/"+id));
+      remove(ref(db,"messages/"+selectedMsgKey));
     }
+    contextMenu.style.display="none";
   };
 </script>
 </body>
