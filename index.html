@@ -2,317 +2,498 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<title>Premium Ads Income</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="//libtl.com/sdk.js" data-zone="9777736" data-sdk="show_9777736"></script>
-
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
-  authDomain: "hridoy-f9c90.firebaseapp.com",
-  databaseURL: "https://hridoy-f9c90-default-rtdb.firebaseio.com",
-  projectId: "hridoy-f9c90",
-  storageBucket: "hridoy-f9c90.firebasestorage.app",
-  messagingSenderId: "378490678321",
-  appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
-  measurementId: "G-5X6Z7BWTFY"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-const userName = tg?.initDataUnsafe?.user?.first_name || "Unknown";
-const userId = tg?.initDataUnsafe?.user?.id || "unknown_user";
-const photoUrl = tg?.initDataUnsafe?.user?.photo_url || "https://telegram.org/img/t_logo.png";
-
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("user-name").innerText = userName;
-    document.getElementById("user-photo").src = photoUrl;
-    updateUI();
-});
-
-const REWARD = 5;
-const MIN_WITHDRAW = 2000;
-const REF_BONUS = 50;
-const MIN_REF_FOR_WITHDRAW = 10;
-const MIN_VIEWS_FOR_WITHDRAW = 500; // ✅ নতুন শর্ত
-let adTimer = null;
-const AD_DURATION = 15;
-
-function generateReferralCode(length = 6) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < length; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
-
-async function getUserData() {
-  const dbRef = ref(db);
-  const snapshot = await get(child(dbRef, `users/${userId}`));
-  if (snapshot.exists()) {
-    const data = snapshot.val();
-    if (!data.claimedReferrals) data.claimedReferrals = [];
-    if (!data.balance) data.balance = 0;
-    if (!data.views) data.views = 0;
-    if (!data.refCount) data.refCount = 0;
-    if (!data.totalWithdrawn) data.totalWithdrawn = 0;
-    if (!data.referralCode) data.referralCode = generateReferralCode();
-    await update(ref(db, `users/${userId}`), { referralCode: data.referralCode });
-    return data;
-  } else {
-    const defaultData = { 
-        balance: 0, views: 0, refCount: 0, totalWithdrawn: 0, claimedReferrals: [],
-        referralCode: generateReferralCode()
-    };
-    await set(ref(db, `users/${userId}`), defaultData);
-    return defaultData;
-  }
-}
-
-async function saveUserData(data) {
-  await update(ref(db, `users/${userId}`), data);
-}
-
-async function updateUI() {
-  const data = await getUserData();
-  document.getElementById("balanceVal").innerText = data.balance.toFixed(2);
-  document.getElementById("viewsVal").innerText = data.views;
-  document.getElementById("refCountVal").innerText = data.refCount;
-  document.getElementById("withdrawnVal").innerText = data.totalWithdrawn.toFixed(2);
-}
-
-window.watchAd = async function() {
-  const watchBtn = document.getElementById('watchBtn');
-  const countdownEl = document.getElementById('countdown');
-  watchBtn.disabled = true;
-  watchBtn.classList.add('muted');
-  countdownEl.innerText = `⏳ Please wait ${AD_DURATION} seconds...`;
-
-  try { if (typeof window.show_9777736 === "function") { window.show_9777736(); } } catch (e) {}
-
-  let remaining = AD_DURATION;
-  adTimer = setInterval(async () => {
-    remaining--;
-    countdownEl.innerText = `⏳ Please wait ${remaining} seconds...`;
-    if (remaining <= 0) {
-      clearInterval(adTimer);
-      const data = await getUserData();
-      data.balance += REWARD;
-      data.views += 1;
-      await saveUserData(data);
-      countdownEl.innerText = `🎉 You earned ${REWARD.toFixed(2)} BDT!`;
-      document.getElementById('coinSound').play().catch(() => {});
-      watchBtn.disabled = false;
-      watchBtn.classList.remove('muted');
-      updateUI();
-    }
-  }, 1000);
-};
-
-window.showWithdraw = function() {
-  document.getElementById("withdraw-section").classList.remove("hidden");
-  document.getElementById("ad-section").classList.add("hidden");
-  document.getElementById("referral-section").classList.add("hidden");
-};
-
-window.calculateBDT = function() {
-  const amount = parseFloat(document.getElementById("balanceAmount").value) || 0;
-  document.getElementById("bdtValue").innerText = `You will get: ${amount.toFixed(2)} BDT`;
-};
-
-window.submitWithdraw = async function() {
-  const method = document.getElementById("method").value;
-  const amount = parseFloat(document.getElementById("balanceAmount").value);
-  const account = document.getElementById("accountNumber").value.trim();
-  const data = await getUserData();
-  if (isNaN(amount) || amount < MIN_WITHDRAW) return alert(`Minimum withdraw is ${MIN_WITHDRAW} BDT.`);
-  if (!account || account.length < 6) return alert("Please enter a valid account number.");
-  if (amount > data.balance) return alert("You don't have enough balance.");
-  if (data.refCount < MIN_REF_FOR_WITHDRAW) return alert(`You need at least ${MIN_REF_FOR_WITHDRAW} referrals.`);
-  if (data.views < MIN_VIEWS_FOR_WITHDRAW) return alert(`You must watch at least ${MIN_VIEWS_FOR_WITHDRAW} ads before withdrawing.`); // ✅ নতুন কন্ডিশন
-
-  data.balance -= amount;
-  data.totalWithdrawn += amount;
-  await saveUserData(data);
-  document.getElementById("withdraw-section").innerHTML = `
-    <h3>✅ Withdraw request submitted!</h3>
-    <p>Method: ${method.toUpperCase()}</p>
-    <p>Amount: ${amount.toFixed(2)} BDT</p>
-    <p>Account: ${account}</p>
-    <p>We will process your request soon.</p>
-    <button class="btn back-btn" onclick="goBack()">🔙 Back</button>`;
-  updateUI();
-};
-
-window.showReferral = async function() {
-  document.getElementById("referral-section").classList.remove("hidden");
-  document.getElementById("withdraw-section").classList.add("hidden");
-  document.getElementById("ad-section").classList.add("hidden");
-  const data = await getUserData();
-  const refLink = `https://t.me/ads25_income_bot?start=${data.referralCode}`;
-  document.getElementById("refLink").innerText = refLink;
-  document.getElementById("refCode").innerText = data.referralCode;
-};
-
-window.copyReferralLink = function() {
-  const ref = document.getElementById("refLink").innerText;
-  navigator.clipboard.writeText(ref).then(() => alert("✅ Referral link copied!"));
-};
-
-window.copyReferralCode = function() {
-  const code = document.getElementById("refCode").innerText;
-  navigator.clipboard.writeText(code).then(() => alert("✅ Referral code copied!"));
-};
-
-window.claimReferralBonus = async function() {
-  const code = document.getElementById("claimCode").value.trim();
-  if (!code) return alert("Enter referral code.");
-  const data = await getUserData();
-  if (code === data.referralCode) return alert("You cannot use your own referral code.");
-  if (data.claimedReferrals.includes(code)) return alert("Already claimed from this code.");
-  const dbRef = ref(db, "users");
-  const allUsers = await get(dbRef);
-  if (!allUsers.exists()) return alert("Invalid referral code.");
-  let referrerId = null;
-  allUsers.forEach((snap) => {
-    const user = snap.val();
-    if (user.referralCode === code) {
-      referrerId = snap.key;
-    }
-  });
-  if (!referrerId) return alert("Invalid referral code.");
-  const referrerPath = ref(db, `users/${referrerId}`);
-  const referrerSnap = await get(referrerPath);
-  if (referrerSnap.exists()) {
-    const referrerData = referrerSnap.val();
-    const newBalance = (referrerData.balance || 0) + REF_BONUS;
-    const newCount = (referrerData.refCount || 0) + 1;
-    await update(referrerPath, { balance: newBalance, refCount: newCount });
-  }
-  data.claimedReferrals.push(code);
-  await saveUserData(data);
-  alert(`🎉 You successfully supported your referrer! They earned ${REF_BONUS} BDT.`);
-  updateUI();
-};
-
-window.goBack = function() {
-  document.getElementById("withdraw-section").classList.add("hidden");
-  document.getElementById("referral-section").classList.add("hidden");
-  document.getElementById("ad-section").classList.remove("hidden");
-  updateUI();
-};
-
-window.showNotice = function() { document.getElementById("noticeOverlay").style.display = "flex"; };
-window.closeNotice = function() { document.getElementById("noticeOverlay").style.display = "none"; };
-window.onload = function() { setTimeout(showNotice, 2000); updateUI(); };
-</script>
-
+<title>Smart Messenger Pro</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-body{background:linear-gradient(135deg,#1e1b4b,#312e81,#3730a3);color:#fff;min-height:100vh;display:flex;justify-content:center;padding:20px;}
-.container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px;animation:fadeIn 1s ease;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-.card{background:rgba(255,255,255,0.08);border-radius:16px;padding:22px;backdrop-filter:blur(12px);box-shadow:0 0 20px rgba(79,70,229,0.3);}
-.card:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(99,102,241,0.5);}
-.profile{display:flex;align-items:center;gap:15px;}
-.profile img{width:70px;height:70px;border-radius:50%;border:3px solid #818cf8;box-shadow:0 0 15px rgba(99,102,241,0.6);}
-.stats{display:flex;justify-content:space-between;gap:10px;}
-.stat-box{flex:1;background:rgba(255,255,255,0.1);padding:12px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,0.15);}
-.stat-box h4{color:#c7d2fe;}
-.stat-box p{font-weight:bold;}
-.btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(90deg,#6366f1,#4f46e5);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;transition:.3s;}
-.btn:hover{transform:scale(1.03);box-shadow:0 0 20px rgba(99,102,241,0.6);}
-.back-btn{background:linear-gradient(90deg,#6b7280,#4b5563);}
-input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;}
-.hidden{display:none;}
-#noticeOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:999;}
-.notice-card{background:rgba(255,255,255,0.1);color:#fff;width:90%;max-width:380px;padding:25px 20px;border-radius:16px;text-align:center;box-shadow:0 0 25px rgba(99,102,241,0.6);position:relative;}
-.close-btn{position:absolute;top:10px;right:15px;font-size:25px;color:#fff;cursor:pointer;transition:0.3s;}
-.close-btn:hover{color:#f87171;transform:scale(1.2);}
+  * {box-sizing:border-box;}
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #3b82f6, #9333ea);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .box {
+    width: 90%;
+    max-width: 420px;
+    padding: 25px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    color: #fff;
+    animation: fadeIn 0.7s ease;
+    position: relative;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(20px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+
+  h2 {
+    text-align:center;
+    color:#fff;
+    margin-bottom:20px;
+    font-weight:600;
+  }
+
+  input, button {
+    font-size:16px;
+    border-radius:8px;
+    border:none;
+    outline:none;
+    transition:all 0.3s ease;
+  }
+  input {
+    width:100%;
+    padding:12px;
+    background:rgba(255,255,255,0.2);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.3);
+    margin-bottom:10px;
+  }
+  input::placeholder {color:#e5e7eb;}
+  input:focus {
+    background:rgba(255,255,255,0.3);
+    border-color:#60a5fa;
+  }
+  button {
+    width:100%;
+    padding:12px;
+    background:#2563eb;
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button:hover {background:#1d4ed8;}
+
+  /* ============ Chat Section ============ */
+  .chatHeader {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  }
+  .chatHeader h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #fff;
+  }
+  .logoutBtn {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .logoutBtn:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+  }
+
+  .messages {
+    height:300px;
+    overflow-y:auto;
+    padding:12px;
+    background:rgba(255,255,255,0.1);
+    border-radius:10px;
+    backdrop-filter:blur(10px);
+    scroll-behavior:smooth;
+  }
+  .msg {
+    margin:10px 0;
+    padding:10px 14px;
+    border-radius:14px;
+    max-width:80%;
+    position:relative;
+    animation: slideIn 0.3s ease;
+    word-wrap: break-word;
+  }
+  @keyframes slideIn {
+    from {transform: translateY(10px); opacity:0;}
+    to {transform: translateY(0); opacity:1;}
+  }
+  .me {
+    background:#2563eb;
+    color:#fff;
+    margin-left:auto;
+    border-bottom-right-radius:0;
+  }
+  .other {
+    background:rgba(255,255,255,0.25);
+    color:#fff;
+    margin-right:auto;
+    border-bottom-left-radius:0;
+  }
+  .time {
+    font-size:11px;
+    opacity:0.8;
+    margin-top:4px;
+    text-align:right;
+  }
+
+  .sendArea {
+    display:flex;
+    margin-top:12px;
+    gap:6px;
+  }
+  .sendArea input {
+    flex:1;
+    border:none;
+    padding:10px;
+  }
+  .sendBtn {
+    background:#60a5fa;
+    border:none;
+    border-radius:8px;
+    width:48px;
+    cursor:pointer;
+    transition:0.3s;
+  }
+  .sendBtn:hover {background:#3b82f6;}
+
+  .online-box {
+    background:rgba(255,255,255,0.15);
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+  }
+
+  .typing {
+    font-size:13px;
+    color:#22c55e;
+    margin-top:6px;
+    text-align:center;
+  }
+
+  /* Context Menu */
+  .contextMenu {
+    position: absolute;
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    border-radius: 8px;
+    padding: 5px 0;
+    z-index: 9999;
+    display:none;
+    min-width: 120px;
+  }
+  .contextMenu button {
+    width:100%;
+    padding:6px 10px;
+    border:none;
+    background:none;
+    color:#fff;
+    cursor:pointer;
+    text-align:left;
+  }
+  .contextMenu button:hover {
+    background: rgba(255,255,255,0.1);
+  }
 </style>
 </head>
 <body>
 
-<div class="container">
-<h2 style="text-align:center;">SMART EARN</h2>
-
-<div class="card profile">
-<img id="user-photo" src="https://telegram.org/img/t_logo.png">
-<div><div id="user-name">Loading...</div></div>
+<!-- 🔐 Secret Code -->
+<div id="codeBox" class="box">
+  <h2>🔐 Secret Access</h2>
+  <input type="password" id="secretCode" placeholder="সিক্রেট কোড লিখুন">
+  <button onclick="checkCode()">প্রবেশ করুন</button>
 </div>
 
-<div class="stats">
-<div class="stat-box"><h4>Balance</h4><p id="balanceVal">0</p></div>
-<div class="stat-box"><h4>Ads Watched</h4><p id="viewsVal">0</p></div>
+<!-- 👤 Name Box -->
+<div id="nameBox" class="box" style="display:none;">
+  <h2>👤 আপনার নাম লিখুন</h2>
+  <input type="text" id="userName" placeholder="যেমনঃ example">
+  <button onclick="setName()">চ্যাট শুরু করুন</button>
 </div>
 
-<div class="stats">
-<div class="stat-box"><h4>Referrals</h4><p id="refCountVal">0</p></div>
-<div class="stat-box"><h4>Total Withdrawn</h4><p id="withdrawnVal">0</p></div>
-</div>
-
-<div class="card" id="ad-section">
-<p>You will get 5 Tk for each ad you watch.</p>
-<p>You will get 50 Tk for each referral</p>
-<button class="btn" id="watchBtn" onclick="watchAd()">🎬 Watch Ad</button>
-<p id="countdown"></p>
-</div>
-
-<div class="card">
-<button class="btn" onclick="showWithdraw()">💸 Withdraw</button>
-<button class="btn" onclick="showReferral()">🤝 Refer</button>
-</div>
-
-<div class="card hidden" id="withdraw-section">
-<h3>Withdraw Balance</h3>
-<select id="method">
-<option value="bkash">Bkash</option>
-<option value="nagad">Nagad</option>
-</select>
-<input type="number" id="balanceAmount" placeholder="Enter Amount" oninput="calculateBDT()">
-<p id="bdtValue">You will get: 0 BDT</p>
-<p style="font-size:13px;color:#f87171;">⚠️ Minimum Withdraw: 2000 BDT, 10 Referrals & 500 Ads Required</p>
-<input type="text" id="accountNumber" placeholder="Enter your account number">
-<button class="btn" onclick="submitWithdraw()">Submit</button>
-<button class="btn back-btn" onclick="goBack()">🔙 Back</button>
-</div>
-
-<div class="card hidden" id="referral-section">
-  <h3>Your Referral Details</h3>
-  <p><strong>Referral Link:</strong></p>
-  <p id="refLink">https://t.me/ads25_income_bot?start=ref</p>
-  <button class="btn" onclick="copyReferralLink()">📋 Copy Link</button>
-  <hr style="margin:15px 0;border-color:rgba(255,255,255,0.2);">
-  <p><strong>Your Referral Code:</strong></p>
-  <p id="refCode">Loading...</p>
-  <button class="btn" onclick="copyReferralCode()">📋 Copy Code</button>
-  <div style="margin-top:20px;">
-    <h4>Claim Bonus Using Referral Code</h4>
-    <input type="text" id="claimCode" placeholder="Enter referral code">
-    <button class="btn" onclick="claimReferralBonus()">Claim Bonus</button>
+<!-- 💬 Chat Box -->
+<div id="chatBox" class="box" style="display:none;">
+  <div class="chatHeader">
+    <h2>💬 Smart Messenger</h2>
+    <button class="logoutBtn" onclick="logout()">🚪 Logout</button>
   </div>
-  <button class="btn back-btn" onclick="goBack()">🔙 Back</button>
-</div>
-</div>
 
-<audio id="coinSound"><source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg"></audio>
+  <div class="online-box">
+    <b>🟢 অনলাইনে:</b>
+    <ul id="onlineUsers" style="list-style:none; padding:0; margin:5px 0 0;"></ul>
+  </div>
 
-<div id="noticeOverlay">
-  <div class="notice-card">
-    <span class="close-btn" onclick="closeNotice()">✖</span>
-    <p>আসসালামু আলাইকুম প্রিয় গ্রাহক ❤️<br><br>
-    আমাদের অফিসিয়াল Telegram চ্যানেলে অবশ্যই যোগ দিন সর্বশেষ আপডেট পেতে👇</p>
-    <a href="https://t.me/work_from_home2023" class="btn" target="_blank">Join Channel</a>
+  <div class="messages" id="messages"></div>
+  <div class="typing" id="typingText"></div>
+
+  <div class="sendArea">
+    <input type="text" id="msgInput" placeholder="আপনার মেসেজ লিখুন..." oninput="userTyping()">
+    <button class="sendBtn" onclick="sendMsg()">📨</button>
   </div>
 </div>
 
+<!-- Context Menu -->
+<div class="contextMenu" id="contextMenu">
+  <button onclick="editMessage()">Edit Message</button>
+  <button onclick="replyMessage()">Reply</button>
+  <button onclick="deleteOwnMessage()">Delete Message</button>
+</div>
+
+<audio id="notifySound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_ef6a2a3b59.mp3?filename=notification-1-126517.mp3"></audio>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove, set, serverTimestamp, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDI5sQSiaX71auqXzZeVo_qAg_FKi6ZJLY",
+    authDomain: "my-app-a1e05.firebaseapp.com",
+    databaseURL: "https://my-app-a1e05-default-rtdb.firebaseio.com",
+    projectId: "my-app-a1e05",
+    storageBucket: "my-app-a1e05.firebasestorage.app",
+    messagingSenderId: "976679185393",
+    appId: "1:976679185393:web:c018991df3bf87d48ab250",
+    measurementId: "G-8RFBTMQJLX"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const SECRET = "199234";
+  const codeBox = document.getElementById("codeBox");
+  const nameBox = document.getElementById("nameBox");
+  const chatBox = document.getElementById("chatBox");
+  const messages = document.getElementById("messages");
+  const msgInput = document.getElementById("msgInput");
+  const sound = document.getElementById("notifySound");
+  const typingText = document.getElementById("typingText");
+  const onlineList = document.getElementById("onlineUsers");
+  const contextMenu = document.getElementById("contextMenu");
+
+  let user = localStorage.getItem("smartUser") || "";
+  let typingTimeout;
+  let lastMsgCount = 0;
+  const ADMIN = "Admin";
+
+  let selectedMsgKey = "";
+  let selectedMsgData = null;
+
+  if (user) {
+    codeBox.style.display="none";
+    chatBox.style.display="block";
+    setOnline(user);
+    loadMessages();
+    showOnlineUsers();
+    watchTyping();
+  }
+
+  window.checkCode = () => {
+    const code = document.getElementById("secretCode").value.trim();
+    if(code === SECRET){
+      codeBox.style.display="none";
+      nameBox.style.display="block";
+    } else alert("❌ ভুল সিক্রেট কোড!");
+  };
+
+  window.setName = () => {
+    const name = document.getElementById("userName").value.trim();
+    if(!name) return alert("নাম লিখুন!");
+    user = name;
+    localStorage.setItem("smartUser", name);
+    nameBox.style.display="none";
+    chatBox.style.display="block";
+    setOnline(user);
+    loadMessages();
+    showOnlineUsers();
+    watchTyping();
+  };
+
+  window.sendMsg = async () => {
+    const text = msgInput.value.trim();
+    if(!text) return;
+    const msgRef = ref(db, "messages");
+    await push(msgRef, {user,text,time:new Date().toLocaleTimeString(),createdAt:serverTimestamp(), reply: selectedMsgData ? selectedMsgData : null});
+    msgInput.value="";
+    selectedMsgKey = "";
+    selectedMsgData = null;
+    update(ref(db, "typing/"+user), {typing:false});
+  };
+
+  window.userTyping = () => {
+    update(ref(db, "typing/"+user), {typing:true});
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(()=>update(ref(db,"typing/"+user),{typing:false}),2000);
+  };
+
+  function watchTyping(){
+    const tRef = ref(db,"typing");
+    onValue(tRef,snap=>{
+      let someoneTyping="";
+      snap.forEach(c=>{
+        const d=c.val();
+        if(d.typing && c.key!==user) someoneTyping=`✍️ ${c.key} টাইপ করছে...`;
+      });
+      typingText.innerText=someoneTyping;
+    });
+  }
+
+  function loadMessages(){
+    const msgRef = ref(db, "messages");
+    onValue(msgRef, snap => {
+      const total = snap.size;
+      if(total > lastMsgCount && lastMsgCount !== 0) sound.play();
+      lastMsgCount = total;
+
+      messages.innerHTML = "";
+      let msgMap = {};
+      snap.forEach(child => {
+        const key = child.key;
+        const d = child.val();
+        msgMap[key] = d;
+        d.key = key;
+      });
+
+      snap.forEach(child => {
+        const key = child.key;
+        const d = child.val();
+        if(d.reply) return; // skip replies here
+
+        const div = document.createElement("div");
+        div.classList.add("msg");
+        div.classList.add(d.user === user ? "me" : "other");
+        div.dataset.key = key;
+        div.innerHTML = `<div><b>${d.user}:</b> ${d.text}</div>
+                         <div class="time">${d.time||""}</div>`;
+
+        if(d.user === user){
+          div.addEventListener("contextmenu", e=>{
+            e.preventDefault();
+            selectedMsgKey = key;
+            selectedMsgData = d;
+            showContextMenu(e.pageX, e.pageY);
+          });
+        }
+
+        if(user === ADMIN){
+          const del = document.createElement("button");
+          del.innerText = "×";
+          del.style.position = "absolute";
+          del.style.top = "-8px";
+          del.style.right = "-8px";
+          del.style.background = "#ef4444";
+          del.style.color = "#fff";
+          del.style.border = "none";
+          del.style.borderRadius = "50%";
+          del.style.width = "20px";
+          del.style.height = "20px";
+          del.style.cursor = "pointer";
+          del.onclick = () => deleteMsg(key);
+          div.appendChild(del);
+        }
+
+        messages.appendChild(div);
+
+        // Show replies
+        snap.forEach(repChild=>{
+          const rData = repChild.val();
+          if(rData.reply && rData.reply.user === d.user && rData.reply.text === d.text){
+            const replyDiv = document.createElement("div");
+            replyDiv.classList.add("msg");
+            replyDiv.classList.add(rData.user === user ? "me" : "other");
+            replyDiv.style.marginLeft = "20px";
+            replyDiv.style.borderLeft = "3px solid #60a5fa";
+            replyDiv.innerHTML = `<div><b>${rData.user}:</b> ${rData.text}</div>
+                                  <div class="time">${rData.time||""}</div>`;
+            if(rData.user === user){
+              replyDiv.addEventListener("contextmenu", e=>{
+                e.preventDefault();
+                selectedMsgKey = repChild.key;
+                selectedMsgData = rData;
+                showContextMenu(e.pageX, e.pageY);
+              });
+            }
+            messages.appendChild(replyDiv);
+          }
+        });
+      });
+
+      messages.scrollTop = messages.scrollHeight;
+    });
+  }
+
+  function setOnline(name){
+    const userRef=ref(db,"online/"+name);
+    set(userRef,{online:true,lastSeen:serverTimestamp()});
+    window.addEventListener("beforeunload",()=>remove(userRef));
+  }
+
+  function showOnlineUsers(){
+    const oRef=ref(db,"online");
+    onValue(oRef,snap=>{
+      onlineList.innerHTML="";
+      snap.forEach(child=>{
+        onlineList.innerHTML+=`<li>🟢 ${child.key}</li>`;
+      });
+    });
+  }
+
+  window.logout = ()=>{
+    localStorage.removeItem("smartUser");
+    remove(ref(db,"online/"+user));
+    chatBox.style.display="none";
+    nameBox.style.display="none";
+    codeBox.style.display="block";
+    document.getElementById("secretCode").value="";
+    user="";
+  };
+
+  // Context Menu Functions
+  function showContextMenu(x, y){
+    contextMenu.style.left = x + "px";
+    contextMenu.style.top = y + "px";
+    contextMenu.style.display = "block";
+  }
+
+  window.onclick = ()=> contextMenu.style.display = "none";
+
+  window.editMessage = ()=>{
+    if(selectedMsgKey && selectedMsgData){
+      const newText = prompt("Edit your message:", selectedMsgData.text);
+      if(newText) update(ref(db,"messages/"+selectedMsgKey), {text:newText});
+    }
+    contextMenu.style.display = "none";
+  };
+
+  window.replyMessage = ()=>{
+    if(selectedMsgKey && selectedMsgData){
+      msgInput.value = `@${selectedMsgData.user}: `;
+      msgInput.focus();
+    }
+    contextMenu.style.display = "none";
+  };
+
+  window.deleteOwnMessage = ()=>{
+    if(selectedMsgKey && selectedMsgData && selectedMsgData.user === user){
+      if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
+        remove(ref(db,"messages/"+selectedMsgKey));
+      }
+    }
+    contextMenu.style.display = "none";
+  };
+
+  window.deleteMsg = async (id)=>{
+    if(user!==ADMIN) return;
+    if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
+      await remove(ref(db,"messages/"+id));
+    }
+  };
+</script>
 </body>
 </html>
