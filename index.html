@@ -1,405 +1,1035 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Messenger Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ফ্রি ফায়ার ডায়মন্ড টপ আপ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-<style>
-  * {box-sizing:border-box;}
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #3b82f6, #9333ea);
-    min-height: 100vh;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .box {
-    width: 90%;
-    max-width: 420px;
-    padding: 25px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(15px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-    color: #fff;
-    animation: fadeIn 0.7s ease;
-    position: relative;
-  }
-  @keyframes fadeIn { from {opacity: 0; transform: translateY(20px);} to {opacity: 1; transform: translateY(0);} }
-  h2 { text-align:center; color:#fff; margin-bottom:20px; font-weight:600; }
-  input, button { font-size:16px; border-radius:8px; border:none; outline:none; transition:all 0.3s ease; }
-  input {
-    width:100%; padding:12px; background:rgba(255,255,255,0.2);
-    color:#fff; border:1px solid rgba(255,255,255,0.3); margin-bottom:10px;
-  }
-  input::placeholder {color:#e5e7eb;}
-  input:focus { background:rgba(255,255,255,0.3); border-color:#60a5fa; }
-  button { width:100%; padding:12px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
-  button:hover {background:#1d4ed8;}
-
-  .chatHeader {
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(20px);
-    border-radius: 12px;
-    padding: 10px 15px;
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  }
-  .chatHeader h2 { margin: 0; font-size: 18px; color: #fff; }
-  .logoutBtn {
-    background: #ef4444; color: #fff; border: none; border-radius: 8px;
-    padding: 8px 12px; font-weight: 600; cursor: pointer; transition: 0.3s;
-  }
-  .logoutBtn:hover { background: #dc2626; transform: scale(1.05); }
-
-  .messages {
-    height:300px; overflow-y:auto; padding:12px;
-    background:rgba(255,255,255,0.1); border-radius:10px;
-    backdrop-filter:blur(10px); scroll-behavior:smooth;
-  }
-  .msg {
-    margin:10px 0; padding:10px 14px; border-radius:14px;
-    max-width:80%; position:relative; animation: slideIn 0.3s ease;
-    word-wrap: break-word;
-  }
-  @keyframes slideIn { from {transform: translateY(10px); opacity:0;} to {transform: translateY(0); opacity:1;} }
-  .me { background:#2563eb; color:#fff; margin-left:auto; border-bottom-right-radius:0; }
-  .other { background:rgba(255,255,255,0.25); color:#fff; margin-right:auto; border-bottom-left-radius:0; }
-  .time { font-size:11px; opacity:0.8; margin-top:4px; text-align:right; }
-
-  .sendArea { display:flex; margin-top:12px; gap:6px; }
-  .sendArea input { flex:1; border:none; padding:10px; }
-  .sendBtn {
-    background:#60a5fa; border:none; border-radius:8px;
-    width:48px; cursor:pointer; transition:0.3s;
-  }
-  .sendBtn:hover {background:#3b82f6;}
-
-  .online-box {
-    background:rgba(255,255,255,0.15); padding:10px;
-    border-radius:10px; margin-bottom:10px;
-  }
-
-  .typing { font-size:13px; color:#22c55e; margin-top:6px; text-align:center; }
-
-  .contextMenu {
-    position: absolute; background: rgba(0,0,0,0.9);
-    color: #fff; border-radius: 8px; padding: 5px 0;
-    z-index: 9999; display:none; min-width: 120px;
-  }
-  .contextMenu button { width:100%; padding:6px 10px; border:none; background:none; color:#fff; cursor:pointer; text-align:left; }
-  .contextMenu button:hover { background: rgba(255,255,255,0.1); }
-</style>
-</head>
-
-<body>
-
-<!-- 🔐 Secret Code -->
-<div id="codeBox" class="box">
-  <h2>🔐 Secret Access</h2>
-  <input type="password" id="secretCode" placeholder="সিক্রেট কোড লিখুন">
-  <button onclick="checkCode()">প্রবেশ করুন</button>
-</div>
-
-<!-- 👤 Name Box -->
-<div id="nameBox" class="box" style="display:none;">
-  <h2>👤 আপনার নাম লিখুন</h2>
-  <input type="text" id="userName" placeholder="যেমনঃ example">
-  <button onclick="setName()">চ্যাট শুরু করুন</button>
-</div>
-
-<!-- 💬 Chat Box -->
-<div id="chatBox" class="box" style="display:none;">
-  <div class="chatHeader">
-    <h2>💬 Smart Messenger</h2>
-    <button class="logoutBtn" onclick="logout()">🚪 Logout</button>
-  </div>
-
-  <div class="online-box">
-    <b>🟢 অনলাইনে:</b>
-    <ul id="onlineUsers" style="list-style:none; padding:0; margin:5px 0 0;"></ul>
-  </div>
-
-  <div class="messages" id="messages"></div>
-  <div class="typing" id="typingText"></div>
-
-  <div class="sendArea">
-    <input type="text" id="msgInput" placeholder="আপনার মেসেজ লিখুন..." oninput="userTyping()">
-    <button class="sendBtn" onclick="sendMsg()">📨</button>
-  </div>
-</div>
-
-<!-- Context Menu -->
-<div class="contextMenu" id="contextMenu">
-  <button onclick="editMessage()">Edit Message</button>
-  <button onclick="replyMessage()">Reply</button>
-  <button onclick="deleteOwnMessage()">Delete Message</button>
-</div>
-
-<audio id="notifySound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_ef6a2a3b59.mp3?filename=notification-1-126517.mp3"></audio>
-
-<script type="module">
-
-/* ========== FIREBASE IMPORT =========== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, set, serverTimestamp, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-/* ========== FIREBASE CONFIG =========== */
-const firebaseConfig = {
-  apiKey: "AIzaSyDI5sQSiaX71auqXzZeVo_qAg_FKi6ZJLY",
-  authDomain: "my-app-a1e05.firebaseapp.com",
-  databaseURL: "https://my-app-a1e05-default-rtdb.firebaseio.com",
-  projectId: "my-app-a1e05",
-  storageBucket: "my-app-a1e05.firebasestorage.app",
-  messagingSenderId: "976679185393",
-  appId: "1:976679185393:web:c018991df3bf87d48ab250",
-  measurementId: "G-8RFBTMQJLX"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-/* ========= GLOBAL VARS ========= */
-const SECRET = "199234";
-const codeBox = document.getElementById("codeBox");
-const nameBox = document.getElementById("nameBox");
-const chatBox = document.getElementById("chatBox");
-const messages = document.getElementById("messages");
-const msgInput = document.getElementById("msgInput");
-const sound = document.getElementById("notifySound");
-const typingText = document.getElementById("typingText");
-const onlineList = document.getElementById("onlineUsers");
-const contextMenu = document.getElementById("contextMenu");
-
-let user = localStorage.getItem("smartUser") || "";
-let typingTimeout;
-let lastMsgCount = 0;
-const ADMIN = "Admin";
-
-let selectedMsgKey = "";
-let selectedMsgData = null;
-
-/* ========= AUTO LOGIN ========= */
-if (user) {
-  codeBox.style.display="none";
-  chatBox.style.display="block";
-  setOnline(user);
-  loadMessages();
-  showOnlineUsers();
-  watchTyping();
-}
-
-/* ========= CHECK CODE ========= */
-window.checkCode = () => {
-  const code = document.getElementById("secretCode").value.trim();
-  if(code === SECRET){
-    codeBox.style.display="none";
-    nameBox.style.display="block";
-  } else alert("❌ ভুল সিক্রেট কোড!");
-};
-
-/* ========= SET NAME ========= */
-window.setName = () => {
-  const name = document.getElementById("userName").value.trim();
-  if(!name) return alert("নাম লিখুন!");
-  user = name;
-  localStorage.setItem("smartUser", name);
-  nameBox.style.display="none";
-  chatBox.style.display="block";
-  setOnline(user);
-  loadMessages();
-  showOnlineUsers();
-  watchTyping();
-};
-
-/* ========== SEND MESSAGE (FIXED REPLY) ========== */
-window.sendMsg = async () => {
-  const text = msgInput.value.trim();
-  if(!text) return;
-
-  await push(ref(db, "messages"), {
-    user,
-    text,
-    time: new Date().toLocaleTimeString(),
-    createdAt: serverTimestamp(),
-
-    /* ⭐ Reply message এখন সঠিকভাবে নিচে যাবে */
-    reply: selectedMsgKey ? {
-      key: selectedMsgKey,
-      user: selectedMsgData.user,
-      text: selectedMsgData.text
-    } : null
-  });
-
-  msgInput.value="";
-  selectedMsgKey = "";
-  selectedMsgData = null;
-  update(ref(db, "typing/"+user), {typing:false});
-};
-
-/* ========= USER TYPING ========= */
-window.userTyping = () => {
-  update(ref(db, "typing/"+user), {typing:true});
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=>update(ref(db,"typing/"+user),{typing:false}),2000);
-};
-
-/* ========= WATCH TYPING ========= */
-function watchTyping(){
-  onValue(ref(db,"typing"), snap => {
-    let txt="";
-    snap.forEach(c=>{
-      const d=c.val();
-      if(d.typing && c.key!==user) txt=`✍️ ${c.key} টাইপ করছে...`;
-    });
-    typingText.innerText=txt;
-  });
-}
-
-/* ========== LOAD MESSAGES (REPLY FIXED) ========== */
-function loadMessages(){
-  onValue(ref(db,"messages"), snap => {
-
-    const total = snap.size;
-    if(total > lastMsgCount && lastMsgCount !== 0) sound.play();
-    lastMsgCount = total;
-
-    messages.innerHTML="";
-
-    snap.forEach(child => {
-      const key = child.key;
-      const d = child.val();
-
-      /* ========== NORMAL BUBBLE ========== */
-      const div = document.createElement("div");
-      div.classList.add("msg");
-      div.classList.add(d.user === user ? "me" : "other");
-      div.dataset.key = key;
-
-      /* ⭐ Reply preview (WhatsApp style) */
-      let replyPreview = "";
-      if(d.reply){
-        replyPreview = `
-          <div style="font-size:12px; opacity:0.8; border-left:3px solid #fff; padding-left:6px; margin-bottom:4px;">
-            <b>${d.reply.user}</b>: ${d.reply.text}
-          </div>
-        `;
-      }
-
-      div.innerHTML = `
-        ${replyPreview}
-        <div><b>${d.user}:</b> ${d.text}</div>
-        <div class="time">${d.time||""}</div>
-      `;
-
-      /* ↳ Context Menu */
-      div.addEventListener("contextmenu", e=>{
-        e.preventDefault();
-        selectedMsgKey = key;
-        selectedMsgData = d;
-
-        if(d.user === user){
-          contextMenu.innerHTML = `
-            <button onclick="editMessage()">Edit Message</button>
-            <button onclick="replyMessage()">Reply</button>
-            <button onclick="deleteOwnMessage()">Delete Message</button>
-          `;
-        } else {
-          contextMenu.innerHTML = `
-            <button onclick="replyMessage()">Reply</button>
-          `;
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --accent-color: #FFD166;
+            --dark-color: #2D3436;
+            --light-color: #F8F9FA;
+            --success-color: #00b894;
+            --danger-color: #d63031;
+            --warning-color: #fdcb6e;
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        contextMenu.style.left = e.pageX+"px";
-        contextMenu.style.top = e.pageY+"px";
-        contextMenu.style.display = "block";
-      });
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      messages.appendChild(div);
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
 
-      /* ADMIN DELETE BUTTON */
-      if(user===ADMIN){
-        const del=document.createElement("button");
-        del.innerText="×";
-        del.style.cssText=`
-          position:absolute; top:-8px; right:-8px;
-          background:#ef4444; color:#fff; border:none;
-          border-radius:50%; width:20px; height:20px; cursor:pointer;
-        `;
-        del.onclick=()=>deleteMsg(key);
-        div.appendChild(del);
-      }
-    });
+        /* Auth Container Styles */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-    messages.scrollTop = messages.scrollHeight;
-  });
-}
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
 
-/* ========= ONLINE LIST ========= */
-function setOnline(name){
-  const userRef=ref(db,"online/"+name);
-  set(userRef,{online:true,lastSeen:serverTimestamp()});
-  window.addEventListener("beforeunload",()=>remove(userRef));
-}
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-function showOnlineUsers(){
-  onValue(ref(db,"online"), snap=>{
-    onlineList.innerHTML="";
-    snap.forEach(child=>{
-      onlineList.innerHTML+=`<li>🟢 ${child.key}</li>`;
-    });
-  });
-}
+        .auth-card h2 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
 
-/* ========= LOGOUT ========= */
-window.logout = ()=>{
-  localStorage.removeItem("smartUser");
-  remove(ref(db,"online/"+user));
-  chatBox.style.display="none";
-  nameBox.style.display="none";
-  codeBox.style.display="block";
-  document.getElementById("secretCode").value="";
-  user="";
-};
+        .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 16px;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
 
-/* ========= CONTEXT MENU ACTIONS ========= */
-window.onclick = ()=> contextMenu.style.display = "none";
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(255, 107, 107, 0.25);
+        }
 
-window.editMessage = ()=>{
-  if(selectedMsgKey && selectedMsgData){
-    const newText = prompt("Edit your message:", selectedMsgData.text);
-    if(newText) update(ref(db,"messages/"+selectedMsgKey), {text:newText});
-  }
-  contextMenu.style.display = "none";
-};
+        .btn-primary-custom {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            padding: 12px 20px;
+            width: 100%;
+            transition: var(--transition);
+            cursor: pointer;
+            font-size: 16px;
+        }
 
-window.replyMessage = ()=>{
-  msgInput.value = "";
-  if(selectedMsgKey && selectedMsgData){
-    msgInput.focus();
-  }
-  contextMenu.style.display = "none";
-};
+        .btn-primary-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
 
-window.deleteOwnMessage = ()=>{
-  if(selectedMsgKey && selectedMsgData && selectedMsgData.user===user){
-    if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
-      remove(ref(db,"messages/"+selectedMsgKey));
-    }
-  }
-  contextMenu.style.display = "none";
-};
+        /* Main App Styles */
+        .main-app {
+            display: none;
+            padding-bottom: 80px;
+        }
 
-window.deleteMsg = async (id)=>{
-  if(user!==ADMIN) return;
-  if(confirm("🗑️ এই মেসেজটি মুছে ফেলবেন?")){
-    await remove(ref(db,"messages/"+id));
-  }
-};
+        .top-bar {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
 
-</script>
+        .app-name {
+            font-weight: 600;
+            font-size: 20px;
+        }
+
+        .balance {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Slider */
+        .slider-container {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .slider {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            height: 100%;
+        }
+
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .dot.active {
+            background: white;
+            width: 25px;
+            border-radius: 5px;
+        }
+
+        /* Notification Bar */
+        .notification-bar {
+            background: var(--dark-color);
+            color: white;
+            padding: 12px;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .notification-text {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+            padding-left: 100%;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-title {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* Product Cards */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .product-image {
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+            background-color: #f0f0f0;
+        }
+
+        .product-name {
+            padding: 15px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item i {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .nav-item span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Wallet Card */
+        .wallet-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+        }
+
+        .wallet-amount {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* History Cards */
+        .history-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .history-card h5 {
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background-color: var(--warning-color); color: white; }
+        .status-completed { background-color: var(--success-color); color: white; }
+        .status-cancelled { background-color: var(--danger-color); color: white; }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border: none;
+        }
+
+        .package-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .package-card:hover, .package-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(255, 107, 107, 0.05);
+            transform: scale(1.02);
+        }
+
+        .deposit-method-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .deposit-method-card:hover, .deposit-method-card.selected {
+            border-color: var(--secondary-color);
+            background-color: rgba(78, 205, 196, 0.05);
+        }
+
+        .copy-btn {
+            background: var(--accent-color);
+            color: var(--dark-color);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .custom-toast {
+            background: var(--dark-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 10px;
+            animation: slideInRight 0.5s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .custom-toast.success { background: var(--success-color); }
+        .custom-toast.error { background: var(--danger-color); }
+        .custom-toast.warning { background: var(--warning-color); color: var(--dark-color); }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 150px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Auth Container -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2><i class="fas fa-gamepad"></i> লগইন করুন</h2>
+                <form onsubmit="return false;">
+                    <input type="email" id="loginEmail" class="form-control" placeholder="আপনার ইমেইল" required>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="আপনার পাসওয়ার্ড" required>
+                    <button type="button" class="btn-primary-custom" onclick="handleLogin()">লগইন</button>
+                </form>
+                <p class="mt-3">একাউন্ট নেই? <a href="#" onclick="toggleAuthForm()">নিবন্ধন করুন</a></p>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" style="display: none;">
+                <h2><i class="fas fa-user-plus"></i> নিবন্ধন করুন</h2>
+                <form onsubmit="return false;">
+                    <input type="text" id="registerName" class="form-control" placeholder="আপনার নাম" required>
+                    <input type="email" id="registerEmail" class="form-control" placeholder="আপনার ইমেইল" required>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" required minlength="6">
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="পাসওয়ার্ড নিশ্চিত করুন" required>
+                    <button type="button" class="btn-primary-custom" onclick="handleRegister()">নিবন্ধন করুন</button>
+                </form>
+                <p class="mt-3">ইতিমধ্যে একাউন্ট আছে? <a href="#" onclick="toggleAuthForm()">লগইন করুন</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="main-app" id="mainApp">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="app-name" id="appName">ডায়মন্ড টপ আপ</div>
+            <div class="balance">ব্যালেন্স: <span id="userBalance">0</span> ৳</div>
+        </div>
+
+        <!-- Slider -->
+        <div class="slider-container">
+            <div class="slider" id="imageSlider">
+                <!-- Slides will be loaded here -->
+            </div>
+            <div class="slider-dots" id="sliderDots"></div>
+        </div>
+
+        <!-- Notification Bar -->
+        <div class="notification-bar">
+            <div class="notification-text" id="notificationText">স্বাগতম! আমাদের অ্যাপে আপনাকে স্বাগতম। নিয়মিত অফার পেতে আমাদের সাথে থাকুন।</div>
+        </div>
+
+        <!-- Content Sections -->
+        <div id="homeSection" class="content-section active">
+            <h3 class="section-title">প্রোডাক্ট সমূহ</h3>
+            <div class="product-grid" id="productList">
+                <div class="loading-spinner"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <div id="depositSection" class="content-section">
+            <h3 class="section-title">ডিপোজিট করুন</h3>
+            <div id="depositMethods">
+                 <div class="loading-spinner"><div class="spinner"></div></div>
+            </div>
+            <div id="depositForm" style="display: none; margin-top: 20px;">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>ডিপোজিট ফর্ম</h5>
+                        <input type="number" id="depositAmount" class="form-control" placeholder="ডিপোজিট পরিমাণ">
+                        <input type="text" id="transactionId" class="form-control" placeholder="ট্রানজেকশন আইডি">
+                        <button class="btn-primary-custom mt-3" onclick="handleDepositSubmit()">সাবমিট করুন</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="walletSection" class="content-section">
+            <h3 class="section-title">আমার ওয়ালেট</h3>
+            <div class="wallet-card">
+                <h5>বর্তমান ব্যালেন্স</h5>
+                <div class="wallet-amount"><span id="walletBalance">0</span> ৳</div>
+            </div>
+        </div>
+
+        <div id="orderHistorySection" class="content-section">
+            <h3 class="section-title">অর্ডার ইতিহাস</h3>
+            <div id="orderHistory">
+                <div class="loading-spinner"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <div id="depositHistorySection" class="content-section">
+            <h3 class="section-title">ডিপোজিট ইতিহাস</h3>
+            <div id="depositHistory">
+                <div class="loading-spinner"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Product Detail Modal -->
+        <div class="modal fade" id="productModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">প্যাকেজ নির্বাচন করুন</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="packageList">
+                             <div class="loading-spinner"><div class="spinner"></div></div>
+                        </div>
+                        <div id="orderForm" style="display: none;">
+                            <hr>
+                            <h5>অর্ডার তথ্য</h5>
+                            <input type="text" id="ffUserId" class="form-control" placeholder="ফ্রি ফায়ার ইউজার আইডি">
+                            <input type="text" id="ffUserName" class="form-control mt-2" placeholder="ফ্রি ফায়ার ইউজার নাম">
+                            <button class="btn-primary-custom mt-3" onclick="handleOrderSubmit()">অর্ডার সাবমিট করুন</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" data-section="homeSection">
+                <i class="fas fa-home"></i>
+                <span>হোম</span>
+            </div>
+            <div class="nav-item" data-section="depositSection">
+                <i class="fas fa-plus-circle"></i>
+                <span>ডিপোজিট</span>
+            </div>
+            <div class="nav-item" data-section="walletSection">
+                <i class="fas fa-wallet"></i>
+                <span>ওয়ালেট</span>
+            </div>
+            <div class="nav-item" data-section="orderHistorySection">
+                <i class="fas fa-history"></i>
+                <span>অর্ডার</span>
+            </div>
+            <div class="nav-item" data-section="depositHistorySection">
+                <i class="fas fa-receipt"></i>
+                <span>ডিপোজিট</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbbvEUnjEnbOPtZJyqL-CUEDy_nAZtGT4",
+            authDomain: "hridoy-f9c90.firebaseapp.com",
+            databaseURL: "https://hridoy-f9c90-default-rtdb.firebaseio.com",
+            projectId: "hridoy-f9c90",
+            storageBucket: "hridoy-f9c90.firebasestorage.app",
+            messagingSenderId: "378490678321",
+            appId: "1:378490678321:web:623f8de0c24dda4dfdb910",
+            measurementId: "G-5X6Z7BWTFY"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // DOM Elements
+        const authContainer = document.getElementById('authContainer');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentSections = document.querySelectorAll('.content-section');
+        const productModal = new bootstrap.Modal(document.getElementById('productModal'));
+        
+        // State
+        let currentUser = null;
+        let selectedProduct = null;
+        let selectedPackage = null;
+        let selectedDepositMethod = null;
+        let sliderImages = [];
+        let currentSlide = 0;
+        let sliderInterval;
+
+        // Initialize App
+        function initApp() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    showMainApp();
+                    loadUserData();
+                    loadAppData();
+                } else {
+                    showAuthForms();
+                }
+            });
+
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const sectionId = item.getAttribute('data-section');
+                    showSection(sectionId);
+                    navItems.forEach(navItem => navItem.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        // UI Functions
+        function showAuthForms() {
+            authContainer.style.display = 'flex';
+            mainApp.style.display = 'none';
+        }
+
+        function showMainApp() {
+            authContainer.style.display = 'none';
+            mainApp.style.display = 'block';
+        }
+
+        function showSection(sectionId) {
+            contentSections.forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if (sectionId === 'orderHistorySection') loadOrderHistory();
+            if (sectionId === 'depositHistorySection') loadDepositHistory();
+        }
+
+        function toggleAuthForm() {
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+            registerForm.style.display = registerForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `custom-toast ${type}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Authentication Functions
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) { showToast('ইমেইল এবং পাসওয়ার্ড লিখুন', 'warning'); return; }
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => showToast('সফলভাবে লগইন হয়েছে'))
+                .catch(error => {
+                    console.error("Login error:", error);
+                    let msg = 'লগইন ব্যর্থ হয়েছে।';
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = 'ভুল ইমেইল বা পাসওয়ার্ড।';
+                    else if (error.code === 'auth/too-many-requests') msg = '�নেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।';
+                    showToast(msg, 'error');
+                });
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!name || !email || !password || !confirmPassword) { showToast('সব তথ্য পূরণ করুন', 'warning'); return; }
+            if (password !== confirmPassword) { showToast('পাসওয়ার্ড মেলেনি', 'error'); return; }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    database.ref('users/' + user.uid).set({
+                        name: name,
+                        email: email,
+                        balance: 0,
+                        createdAt: new Date().toISOString()
+                    });
+                    showToast('সফলভাবে নিবন্ধন হয়েছে');
+                })
+                .catch(error => {
+                    console.error("Registration error:", error);
+                    let msg = 'নিবন্ধন ব্যর্থ হয়েছে।';
+                    if (error.code === 'auth/email-already-in-use') msg = 'এই ইমেইল দিয়ে ইতিমধ্যে একাউন্ট রয়েছে।';
+                    else if (error.code === 'auth/weak-password') msg = 'পাসওয়ার্ড খুব দুর্বল। অন্তত ৬ টি অক্ষরের পাসওয়ার্ড ব্যবহার করুন।';
+                    showToast(msg, 'error');
+                });
+        }
+
+        // Data Loading Functions
+        function loadUserData() {
+            if (!currentUser) return;
+            database.ref('users/' + currentUser.uid).on('value', snapshot => {
+                const userData = snapshot.val();
+                if (userData) {
+                    document.getElementById('userBalance').textContent = userData.balance || 0;
+                    document.getElementById('walletBalance').textContent = userData.balance || 0;
+                }
+            });
+        }
+
+        function loadAppData() {
+            // Load settings
+            database.ref('settings').once('value').then(snapshot => {
+                const settings = snapshot.val();
+                if (settings) {
+                    if (settings.appName) document.getElementById('appName').textContent = settings.appName;
+                    if (settings.notification) document.getElementById('notificationText').textContent = settings.notification;
+                }
+            });
+            
+            // Load slider images
+            database.ref('sliderImages').once('value').then(snapshot => {
+                sliderImages = [];
+                snapshot.forEach(childSnapshot => sliderImages.push(childSnapshot.val()));
+                if (sliderImages.length > 0) {
+                    renderSlider();
+                    startSlider();
+                }
+            });
+
+            // Load products
+            database.ref('products').once('value').then(snapshot => {
+                const productList = document.getElementById('productList');
+                productList.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const product = childSnapshot.val();
+                    product.id = childSnapshot.key;
+                    renderProduct(product);
+                });
+            });
+
+            // Load deposit methods
+            database.ref('depositMethods').once('value').then(snapshot => {
+                const depositMethods = document.getElementById('depositMethods');
+                depositMethods.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const method = childSnapshot.val();
+                    method.id = childSnapshot.key;
+                    renderDepositMethod(method);
+                });
+            });
+        }
+
+        function renderSlider() {
+            const imageSlider = document.getElementById('imageSlider');
+            const sliderDots = document.getElementById('sliderDots');
+            imageSlider.innerHTML = '';
+            sliderDots.innerHTML = '';
+            
+            sliderImages.forEach((image, index) => {
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                slide.style.backgroundImage = `url(${image})`;
+                imageSlider.appendChild(slide);
+
+                const dot = document.createElement('span');
+                dot.className = `dot ${index === 0 ? 'active' : ''}`;
+                dot.onclick = () => goToSlide(index);
+                sliderDots.appendChild(dot);
+            });
+        }
+
+        function startSlider() {
+            if (sliderInterval) clearInterval(sliderInterval);
+            sliderInterval = setInterval(() => {
+                currentSlide = (currentSlide + 1) % sliderImages.length;
+                goToSlide(currentSlide);
+            }, 4000);
+        }
+        
+        function goToSlide(index) {
+            currentSlide = index;
+            document.getElementById('imageSlider').style.transform = `translateX(-${currentSlide * 100}%)`;
+            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+        }
+
+        function renderProduct(product) {
+            const productList = document.getElementById('productList');
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <div class="product-image" style="background-image: url(${product.image})"></div>
+                <div class="product-name">${product.name}</div>
+            `;
+            productCard.addEventListener('click', () => {
+                selectedProduct = product;
+                loadProductPackages(product.id);
+                productModal.show();
+            });
+            productList.appendChild(productCard);
+        }
+
+        function loadProductPackages(productId) {
+            const packageList = document.getElementById('packageList');
+            packageList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+            document.getElementById('orderForm').style.display = 'none';
+            
+            database.ref('packages').orderByChild('productId').equalTo(productId).once('value').then(snapshot => {
+                packageList.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const pkg = childSnapshot.val();
+                    pkg.id = childSnapshot.key;
+                    renderPackage(pkg);
+                });
+            });
+        }
+
+        function renderPackage(pkg) {
+            const packageList = document.getElementById('packageList');
+            const packageCard = document.createElement('div');
+            packageCard.className = 'package-card';
+            packageCard.innerHTML = `
+                <h4>${pkg.diamonds} <i class="fas fa-gem"></i></h4>
+                <p class="mb-0 fw-bold">${pkg.price} ৳</p>
+            `;
+            packageCard.addEventListener('click', () => {
+                document.querySelectorAll('.package-card').forEach(card => card.classList.remove('selected'));
+                packageCard.classList.add('selected');
+                selectedPackage = pkg;
+                document.getElementById('orderForm').style.display = 'block';
+            });
+            packageList.appendChild(packageCard);
+        }
+
+        function renderDepositMethod(method) {
+            const depositMethods = document.getElementById('depositMethods');
+            const methodCard = document.createElement('div');
+            methodCard.className = 'deposit-method-card';
+            methodCard.innerHTML = `
+                <h5>${method.name}</h5>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span>${method.number}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${method.number}')"><i class="fas fa-copy"></i> কপি</button>
+                </div>
+            `;
+            methodCard.addEventListener('click', () => {
+                document.querySelectorAll('.deposit-method-card').forEach(card => card.classList.remove('selected'));
+                methodCard.classList.add('selected');
+                selectedDepositMethod = method;
+                document.getElementById('depositForm').style.display = 'block';
+            });
+            depositMethods.appendChild(methodCard);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => showToast('নাম্বার কপি হয়েছে'));
+        }
+
+        function loadOrderHistory() {
+            if (!currentUser) return;
+            const orderHistory = document.getElementById('orderHistory');
+            orderHistory.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+            
+            database.ref('orders').orderByChild('userId').equalTo(currentUser.uid).once('value').then(snapshot => {
+                orderHistory.innerHTML = '';
+                if (!snapshot.exists()) { orderHistory.innerHTML = '<p class="text-center text-white">কোন অর্ডার পাওয়া যায়নি</p>'; return; }
+                
+                snapshot.forEach(childSnapshot => {
+                    const order = childSnapshot.val();
+                    renderHistoryCard(orderHistory, order.productName, `${order.diamonds} ডায়মন্ড`, order.price, order.status, order.createdAt);
+                });
+            });
+        }
+
+        function loadDepositHistory() {
+            if (!currentUser) return;
+            const depositHistory = document.getElementById('depositHistory');
+            depositHistory.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+            
+            database.ref('deposits').orderByChild('userId').equalTo(currentUser.uid).once('value').then(snapshot => {
+                depositHistory.innerHTML = '';
+                if (!snapshot.exists()) { depositHistory.innerHTML = '<p class="text-center text-white">কোন ডিপোজিট পাওয়া যায়নি</p>'; return; }
+
+                snapshot.forEach(childSnapshot => {
+                    const deposit = childSnapshot.val();
+                    renderHistoryCard(depositHistory, deposit.methodName, deposit.amount + ' ৳', deposit.amount, deposit.status, deposit.createdAt);
+                });
+            });
+        }
+
+        function renderHistoryCard(container, title, detail, amount, status, date) {
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            const statusClass = `status-${status}`;
+            const statusText = status === 'pending' ? 'পেন্ডিং' : status === 'completed' ? 'সম্পন্ন' : 'বাতিল';
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5>${title}</h5>
+                        <p>${detail}</p>
+                        <small class="text-muted">${new Date(date).toLocaleString()}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <p class="mb-0 mt-1 fw-bold">${amount} ৳</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        // Form Submit Functions
+        function handleDepositSubmit() {
+            const amount = document.getElementById('depositAmount').value;
+            const transactionId = document.getElementById('transactionId').value;
+            if (!amount || !transactionId) { showToast('সব তথ্য পূরণ করুন', 'warning'); return; }
+            if (!selectedDepositMethod) { showToast('ডিপোজিট মেথড নির্বাচন করুন', 'warning'); return; }
+            
+            const deposit = {
+                userId: currentUser.uid,
+                amount: parseFloat(amount),
+                transactionId: transactionId,
+                methodId: selectedDepositMethod.id,
+                methodName: selectedDepositMethod.name,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            database.ref('deposits').push(deposit).then(() => {
+                showToast('ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে');
+                document.getElementById('depositAmount').value = '';
+                document.getElementById('transactionId').value = '';
+                document.getElementById('depositForm').style.display = 'none';
+                document.querySelectorAll('.deposit-method-card').forEach(card => card.classList.remove('selected'));
+                selectedDepositMethod = null;
+            }).catch(error => showToast(error.message, 'error'));
+        }
+
+        function handleOrderSubmit() {
+            const ffUserId = document.getElementById('ffUserId').value;
+            const ffUserName = document.getElementById('ffUserName').value;
+            if (!ffUserId || !ffUserName) { showToast('সব তথ্য পূরণ করুন', 'warning'); return; }
+            if (!selectedPackage) { showToast('প্যাকেজ নির্বাচন করুন', 'warning'); return; }
+            
+            database.ref('users/' + currentUser.uid).once('value').then(snapshot => {
+                const userData = snapshot.val();
+                const userBalance = userData.balance || 0;
+                if (userBalance < selectedPackage.price) { showToast('পর্যাপ্ত ব্যালেন্স নেই', 'error'); return; }
+                
+                const order = {
+                    userId: currentUser.uid,
+                    ffUserId: ffUserId,
+                    ffUserName: ffUserName,
+                    productId: selectedProduct.id,
+                    productName: selectedProduct.name,
+                    packageId: selectedPackage.id,
+                    diamonds: selectedPackage.diamonds,
+                    price: selectedPackage.price,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+                
+                database.ref('orders').push(order).then(() => {
+                    const newBalance = userBalance - selectedPackage.price;
+                    database.ref('users/' + currentUser.uid).update({ balance: newBalance });
+                    
+                    showToast('অর্ডার সফলভাবে জমা হয়েছে');
+                    document.getElementById('ffUserId').value = '';
+                    document.getElementById('ffUserName').value = '';
+                    document.getElementById('orderForm').style.display = 'none';
+                    selectedPackage = null;
+                    productModal.hide();
+                }).catch(error => showToast(error.message, 'error'));
+            });
+        }
+
+        // Initialize the app
+        initApp();
+    </script>
 </body>
 </html>
